@@ -5,6 +5,10 @@ import (
 )
 
 // TODO replace concrete files with fakes
+// TODO should raise error if first file could not be opened
+// TODO should raise error if second file could not be opened
+// TODO should raise error if error happens while reading first file
+// TODO should raise error if error happens while reading second file
 
 func TestCompare_same_file(t*testing.T) {
 	path := "/tmp/main.go"
