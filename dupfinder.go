@@ -3,14 +3,15 @@ package dupfinder
 import (
 	"os"
 	"bytes"
+	"io"
 )
 
 const chunkSize = 64000
 
-func chunker(f *os.File, ch chan []byte) {
+func chunker(r io.Reader, ch chan []byte) {
 	for {
 		buf := make([]byte, chunkSize)
-		_, err := f.Read(buf)
+		_, err := r.Read(buf)
 
 		if err != nil {
 			close(ch)
