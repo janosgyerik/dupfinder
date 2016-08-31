@@ -15,7 +15,7 @@ func TestCompare_same_file(t*testing.T) {
 
 	expected := 0
 
-	cmp, err := Compare(path, path)
+	cmp, err := CompareFiles(path, path)
 	if err != nil {
 		t.Errorf("Compare(f, f) raised error: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestCompare_size_ascending(t*testing.T) {
 
 	expected := -1
 
-	cmp, err := Compare(smaller, bigger)
+	cmp, err := CompareFiles(smaller, bigger)
 	if err != nil {
 		t.Errorf("Compare(smaller, bigger) raised error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestCompare_size_descending(t*testing.T) {
 
 	expected := 1
 
-	cmp, err := Compare(bigger, smaller)
+	cmp, err := CompareFiles(bigger, smaller)
 	if err != nil {
 		t.Errorf("Compare(bigger, smaller) raised error: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestCompare_same_size_content_ascending(t*testing.T) {
 
 	expected := -1
 
-	cmp, err := Compare(lower, higher)
+	cmp, err := CompareFiles(lower, higher)
 	if err != nil {
 		t.Errorf("Compare(lower, higher) raised error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestCompare_same_size_content_descending(t*testing.T) {
 
 	expected := 1
 
-	cmp, err := Compare(higher, lower)
+	cmp, err := CompareFiles(higher, lower)
 	if err != nil {
 		t.Errorf("Compare(higher, lower) raised error: %v", err)
 	}

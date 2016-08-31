@@ -22,7 +22,7 @@ func chunker(r io.Reader, ch chan []byte) {
 	}
 }
 
-func Compare(path1, path2 string) (int, error) {
+func CompareFiles(path1, path2 string) (int, error) {
 	fd1, err := os.Open(path1)
 	defer fd1.Close()
 	if err != nil {
@@ -35,6 +35,10 @@ func Compare(path1, path2 string) (int, error) {
 		return 0, err
 	}
 
+	return CompareReaders(fd1, fd2)
+}
+
+func CompareReaders(fd1, fd2 io.Reader) (int, error) {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)
 
