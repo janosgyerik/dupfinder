@@ -2,20 +2,22 @@ package dupfinder
 
 import (
 	"testing"
+	"strings"
 )
 
-// TODO replace concrete files with fakes
 // TODO should raise error if first file could not be opened
 // TODO should raise error if second file could not be opened
 // TODO should raise error if error happens while reading first file
 // TODO should raise error if error happens while reading second file
 
-func TestCompare_same_file(t*testing.T) {
-	path := "/tmp/main.go"
+func TestCompareReaders_same_file(t*testing.T) {
+	content := "dummy content"
+	reader1 := strings.NewReader(content)
+	reader2 := strings.NewReader(content)
 
 	expected := 0
 
-	cmp, err := CompareFiles(path, path)
+	cmp, err := CompareReaders(reader1, reader2)
 	if err != nil {
 		t.Errorf("Compare(f, f) raised error: %v", err)
 	}
@@ -24,13 +26,13 @@ func TestCompare_same_file(t*testing.T) {
 	}
 }
 
-func TestCompare_size_ascending(t*testing.T) {
-	smaller := "/tmp/a"
-	bigger := "/tmp/main.go"
+func TestCompareReaders_size_ascending(t*testing.T) {
+	smaller := strings.NewReader("dummy content")
+	bigger := strings.NewReader("longer dummy content")
 
 	expected := -1
 
-	cmp, err := CompareFiles(smaller, bigger)
+	cmp, err := CompareReaders(smaller, bigger)
 	if err != nil {
 		t.Errorf("Compare(smaller, bigger) raised error: %v", err)
 	}
@@ -39,13 +41,13 @@ func TestCompare_size_ascending(t*testing.T) {
 	}
 }
 
-func TestCompare_size_descending(t*testing.T) {
-	smaller := "/tmp/a"
-	bigger := "/tmp/main.go"
+func TestCompareReaders_size_descending(t*testing.T) {
+	smaller := strings.NewReader("dummy content")
+	bigger := strings.NewReader("longer dummy content")
 
 	expected := 1
 
-	cmp, err := CompareFiles(bigger, smaller)
+	cmp, err := CompareReaders(bigger, smaller)
 	if err != nil {
 		t.Errorf("Compare(bigger, smaller) raised error: %v", err)
 	}
@@ -54,13 +56,13 @@ func TestCompare_size_descending(t*testing.T) {
 	}
 }
 
-func TestCompare_same_size_content_ascending(t*testing.T) {
-	lower := "/tmp/a"
-	higher := "/tmp/b"
+func TestCompareReaders_same_size_content_ascending(t*testing.T) {
+	lower := strings.NewReader("dummy content a")
+	higher := strings.NewReader("dummy content b")
 
 	expected := -1
 
-	cmp, err := CompareFiles(lower, higher)
+	cmp, err := CompareReaders(lower, higher)
 	if err != nil {
 		t.Errorf("Compare(lower, higher) raised error: %v", err)
 	}
@@ -69,13 +71,13 @@ func TestCompare_same_size_content_ascending(t*testing.T) {
 	}
 }
 
-func TestCompare_same_size_content_descending(t*testing.T) {
-	lower := "/tmp/a"
-	higher := "/tmp/b"
+func TestCompareReaders_same_size_content_descending(t*testing.T) {
+	lower := strings.NewReader("dummy content a")
+	higher := strings.NewReader("dummy content b")
 
 	expected := 1
 
-	cmp, err := CompareFiles(higher, lower)
+	cmp, err := CompareReaders(higher, lower)
 	if err != nil {
 		t.Errorf("Compare(higher, lower) raised error: %v", err)
 	}
