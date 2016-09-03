@@ -105,7 +105,7 @@ func TestCompareFiles_equal_if_both_empty_dummy(t*testing.T) {
 	dummy1, err := ioutil.TempFile(os.TempDir(), "dummy1")
 	defer os.Remove(dummy1.Name())
 
-	dummy2, err := ioutil.TempFile(os.TempDir(), "dummy1")
+	dummy2, err := ioutil.TempFile(os.TempDir(), "dummy2")
 	defer os.Remove(dummy2.Name())
 
 	expected := 0
@@ -116,6 +116,26 @@ func TestCompareFiles_equal_if_both_empty_dummy(t*testing.T) {
 	}
 	if cmp != expected {
 		t.Errorf("Compare(dummy1, dummy2) == %v, want %v", cmp, expected)
+	}
+}
+
+func TestCompareFiles_empty_comes_before_nonempty(t*testing.T) {
+	empty, err := ioutil.TempFile(os.TempDir(), "empty")
+	defer os.Remove(empty.Name())
+
+	nonempty, err := ioutil.TempFile(os.TempDir(), "nonempty")
+	defer os.Remove(nonempty.Name())
+
+	nonempty.WriteString("something")
+
+	expected := -1
+
+	cmp, err := CompareFiles(empty.Name(), nonempty.Name())
+	if err != nil {
+		t.Errorf("Compare(empty, nonempty) raised error: %v", err)
+	}
+	if cmp != expected {
+		t.Errorf("Compare(empty, nonempty) == %v, want %v", cmp, expected)
 	}
 }
 
