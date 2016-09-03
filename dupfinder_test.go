@@ -3,10 +3,10 @@ package dupfinder
 import (
 	"testing"
 	"strings"
+	"io/ioutil"
+	"os"
 )
 
-// TODO should raise error if first file could not be opened
-// TODO should raise error if second file could not be opened
 // TODO should raise error if error happens while reading first file
 // TODO should raise error if error happens while reading second file
 
@@ -86,9 +86,62 @@ func TestCompareReaders_same_size_content_descending(t*testing.T) {
 	}
 }
 
+func TestCompareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
+	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+	defer os.Remove(file.Name())
+
+	expected := 0
+
+	cmp, err := CompareFiles(file.Name(), file.Name())
+	if err != nil {
+		t.Errorf("Compare(dummy, dummy) raised error: %v", err)
+	}
+	if cmp != expected {
+		t.Errorf("Compare(dummy, dummy) == %v, want %v", cmp, expected)
+	}
+}
+
+func TestCompareFiles_equal_if_both_empty_dummy(t*testing.T) {
+	dummy1, err := ioutil.TempFile(os.TempDir(), "dummy1")
+	defer os.Remove(dummy1.Name())
+
+	dummy2, err := ioutil.TempFile(os.TempDir(), "dummy1")
+	defer os.Remove(dummy2.Name())
+
+	expected := 0
+
+	cmp, err := CompareFiles(dummy1.Name(), dummy2.Name())
+	if err != nil {
+		t.Errorf("Compare(dummy1, dummy2) raised error: %v", err)
+	}
+	if cmp != expected {
+		t.Errorf("Compare(dummy1, dummy2) == %v, want %v", cmp, expected)
+	}
+}
+
 func TestCompareFiles_fails_if_both_nonexistent(t*testing.T) {
 	_, err := CompareFiles("/nonexistent1", "/nonexistent2")
 	if err == nil {
 		t.Error("Compare(nonexistent1, nonexistent2) should have raised error")
+	}
+}
+
+func TestCompareFiles_fails_if_first_nonexistent(t*testing.T) {
+	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+	defer os.Remove(file.Name())
+
+	_, err = CompareFiles("/nonexistent", file.Name())
+	if err == nil {
+		t.Error("Compare(nonexistent, dummy) should have raised error")
+	}
+}
+
+func TestCompareFiles_fails_if_second_nonexistent(t*testing.T) {
+	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+	defer os.Remove(file.Name())
+
+	_, err = CompareFiles(file.Name(), "/nonexistent")
+	if err == nil {
+		t.Error("Compare(dummy, nonexistent) should have raised error")
 	}
 }
