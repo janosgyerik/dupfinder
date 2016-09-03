@@ -85,3 +85,10 @@ func TestCompareReaders_same_size_content_descending(t*testing.T) {
 		t.Errorf("Compare(higher, lower) == %v, want %v", cmp, expected)
 	}
 }
+
+func TestCompareFiles_fails_if_both_nonexistent(t*testing.T) {
+	_, err := CompareFiles("/nonexistent1", "/nonexistent2")
+	if err == nil {
+		t.Error("Compare(nonexistent1, nonexistent2) should have raised error")
+	}
+}
