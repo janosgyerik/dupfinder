@@ -8,7 +8,7 @@ import (
 
 const chunkSize = 64000
 
-func chunker(r io.Reader, ch chan []byte) {
+func chunker(r io.Reader, ch chan <- []byte) {
 	for {
 		buf := make([]byte, chunkSize)
 		_, err := r.Read(buf)
