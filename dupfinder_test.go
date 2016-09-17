@@ -7,9 +7,6 @@ import (
 	"os"
 )
 
-// TODO should raise error if error happens while reading first file
-// TODO should raise error if error happens while reading second file
-
 func TestCompareReaders_same_file(t*testing.T) {
 	content := "dummy content"
 	reader1 := strings.NewReader(content)
