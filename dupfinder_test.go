@@ -196,8 +196,8 @@ func TestFindDuplicates_two_duplicates(t*testing.T) {
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
-	if len(duplicates[0]) != 2 {
-		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0]), 2)
+	if len(duplicates[0].getPaths()) != 2 {
+		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0].getPaths()), 2)
 	}
 }
 
@@ -206,8 +206,8 @@ func TestFindDuplicates_three_duplicates(t*testing.T) {
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
-	if len(duplicates[0]) != 3 {
-		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0]), 3)
+	if len(duplicates[0].getPaths()) != 3 {
+		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0].getPaths()), 3)
 	}
 }
 
@@ -230,10 +230,10 @@ func TestFindDuplicates_two_duplicate_groups(t*testing.T) {
 	if len(duplicates) != 2 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 2)
 	}
-	if len(duplicates[0]) != 2 {
-		t.Errorf("Found %d duplicate files in group 1, expected %d", len(duplicates[0]), 2)
+	if len(duplicates[0].getPaths()) != 2 {
+		t.Errorf("Found %d duplicate files in group 1, expected %d", len(duplicates[0].getPaths()), 2)
 	}
-	if len(duplicates[1]) != 3 {
-		t.Errorf("Found %d duplicate files in group 2, expected %d", len(duplicates[1]), 3)
+	if len(duplicates[1].getPaths()) != 3 {
+		t.Errorf("Found %d duplicate files in group 2, expected %d", len(duplicates[1].getPaths()), 3)
 	}
 }

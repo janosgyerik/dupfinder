@@ -60,14 +60,28 @@ func CompareReaders(fd1, fd2 io.Reader) (int, error) {
 	}
 }
 
-type Duplicates map[string]bool
-//struct {
-//	paths map[string]bool
-//}
+type Duplicates struct {
+	paths map[string]bool
+}
+
+func newDuplicates() Duplicates {
+	return Duplicates{make(map[string]bool)}
+}
 
 func (duplicates Duplicates) add(path string) {
-	//duplicates.paths[path] = true
-	duplicates[path] = true
+	duplicates.paths[path] = true
+}
+
+func (duplicates Duplicates) getPaths() []string {
+	return keys(duplicates.paths)
+}
+
+func keys(m map[string]bool) []string {
+	keys := make([]string, 0)
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 type dupTracker struct {
@@ -85,9 +99,7 @@ func (tracker dupTracker) add(path1, path2 string) {
 	} else if ok2 {
 		tracker.addToPool(path1, pool2)
 	} else {
-		//pool := make(Duplicates)
-		pool := make(map[string]bool)
-		//pool := Duplicates{}
+		pool := newDuplicates()
 		tracker.addToPool(path1, pool)
 		tracker.addToPool(path2, pool)
 	}
@@ -100,7 +112,7 @@ func (tracker dupTracker) addToPool(path string, pool Duplicates) {
 
 func (tracker dupTracker) mergePools(path1, path2 string) {
 	pool := tracker.getPool(path1)
-	for path, _ := range tracker.getPool(path2) {
+	for _, path := range tracker.getPool(path2).getPaths() {
 		tracker.addToPool(path, pool)
 	}
 }
@@ -113,7 +125,7 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 	duplicates := make([]Duplicates, 0)
 	for _, dups := range tracker.pools {
 		duplicates = append(duplicates, dups)
-		for path, _ := range dups {
+		for _, path := range dups.getPaths() {
 			delete(tracker.pools, path)
 		}
 	}
