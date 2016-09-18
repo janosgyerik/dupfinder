@@ -164,8 +164,6 @@ func TestCompareFiles_fails_if_second_nonexistent(t*testing.T) {
 	}
 }
 
-// TODO missing test: compare equal non-empty content
-
 func createTempFileWithContent(content string) *os.File {
 	file, _ := ioutil.TempFile(os.TempDir(), "prefix")
 	file.WriteString(content)
