@@ -162,3 +162,108 @@ func TestCompareFiles_fails_if_second_nonexistent(t*testing.T) {
 		t.Error("Compare(dummy, nonexistent) should have raised error")
 	}
 }
+
+// TODO missing test: compare equal non-empty content
+
+func createTempFileWithContent(content string) *os.File {
+	file, _ := ioutil.TempFile(os.TempDir(), "prefix")
+	file.WriteString(content)
+	return file
+}
+
+func TestFindDuplicates_two_duplicates(t*testing.T) {
+	content := "dummy content"
+
+	file1 := createTempFileWithContent(content)
+	defer os.Remove(file1.Name())
+
+	file2 := createTempFileWithContent(content)
+	defer os.Remove(file2.Name())
+
+	duplicates := FindDuplicates(file1.Name(), file2.Name())
+	if len(duplicates) != 1 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
+	}
+	if len(duplicates[0]) != 2 {
+		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0]), 2)
+	}
+}
+
+func TestFindDuplicates_three_duplicates(t*testing.T) {
+	content := "dummy content"
+
+	file1 := createTempFileWithContent(content)
+	defer os.Remove(file1.Name())
+
+	file2 := createTempFileWithContent(content)
+	defer os.Remove(file2.Name())
+
+	file3 := createTempFileWithContent(content)
+	defer os.Remove(file3.Name())
+
+	duplicates := FindDuplicates(file1.Name(), file2.Name(), file3.Name())
+	if len(duplicates) != 1 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
+	}
+	if len(duplicates[0]) != 3 {
+		t.Errorf("Found %d duplicate files, expected %d", len(duplicates[0]), 3)
+	}
+}
+
+func TestFindDuplicates_two_different(t*testing.T) {
+	file1 := createTempFileWithContent("text1")
+	defer os.Remove(file1.Name())
+
+	file2 := createTempFileWithContent("text2")
+	defer os.Remove(file2.Name())
+
+	duplicates := FindDuplicates(file1.Name(), file2.Name())
+	if len(duplicates) != 0 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
+	}
+}
+
+func TestFindDuplicates_three_different(t*testing.T) {
+	file1 := createTempFileWithContent("text1")
+	defer os.Remove(file1.Name())
+
+	file2 := createTempFileWithContent("text2")
+	defer os.Remove(file2.Name())
+
+	file3 := createTempFileWithContent("text3")
+	defer os.Remove(file3.Name())
+
+	duplicates := FindDuplicates(file1.Name(), file2.Name(), file3.Name())
+	if len(duplicates) != 0 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
+	}
+}
+
+func TestFindDuplicates_two_duplicate_groups(t*testing.T) {
+	content1 := "dummy content 1"
+
+	file1_1 := createTempFileWithContent(content1)
+	defer os.Remove(file1_1.Name())
+
+	file1_2 := createTempFileWithContent(content1)
+	defer os.Remove(file1_2.Name())
+
+	content2 := "dummy content 2"
+
+	file2_1 := createTempFileWithContent(content2)
+	defer os.Remove(file2_1.Name())
+
+	file2_2 := createTempFileWithContent(content2)
+	defer os.Remove(file2_2.Name())
+
+	duplicates := FindDuplicates(file1_1.Name(), file1_2.Name(), file2_1.Name(), file2_2.Name())
+	if len(duplicates) != 2 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 2)
+	}
+	if len(duplicates[0]) != 2 {
+		t.Errorf("Found %d duplicate files in group 1, expected %d", len(duplicates[0]), 2)
+	}
+	if len(duplicates[1]) != 2 {
+		t.Errorf("Found %d duplicate files in group 2, expected %d", len(duplicates[1]), 2)
+	}
+}
