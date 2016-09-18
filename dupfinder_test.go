@@ -5,6 +5,7 @@ import (
 	"strings"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 func TestCompareReaders_same_file(t*testing.T) {
@@ -171,6 +172,18 @@ func createTempFileWithContent(content string) *os.File {
 	return file
 }
 
+func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
+	paths := make([]string, 0)
+
+	for i := 0; i < distinctCount; i++ {
+		file := createTempFileWithContent("dummy distinct " + strconv.Itoa(i))
+		defer os.Remove(file.Name())
+		paths = append(paths, file.Name())
+	}
+
+	return FindDuplicates(paths...)
+}
+
 func TestFindDuplicates_two_duplicates(t*testing.T) {
 	content := "dummy content"
 
@@ -211,29 +224,14 @@ func TestFindDuplicates_three_duplicates(t*testing.T) {
 }
 
 func TestFindDuplicates_two_different(t*testing.T) {
-	file1 := createTempFileWithContent("text1")
-	defer os.Remove(file1.Name())
-
-	file2 := createTempFileWithContent("text2")
-	defer os.Remove(file2.Name())
-
-	duplicates := FindDuplicates(file1.Name(), file2.Name())
+	duplicates := findDuplicates(2)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
 }
 
 func TestFindDuplicates_three_different(t*testing.T) {
-	file1 := createTempFileWithContent("text1")
-	defer os.Remove(file1.Name())
-
-	file2 := createTempFileWithContent("text2")
-	defer os.Remove(file2.Name())
-
-	file3 := createTempFileWithContent("text3")
-	defer os.Remove(file3.Name())
-
-	duplicates := FindDuplicates(file1.Name(), file2.Name(), file3.Name())
+	duplicates := findDuplicates(3)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
