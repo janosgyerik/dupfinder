@@ -73,6 +73,10 @@ func (duplicates Duplicates) add(path string) {
 	duplicates.paths[path] = true
 }
 
+func (duplicates Duplicates) count() int {
+	return len(duplicates.paths)
+}
+
 func (duplicates Duplicates) getPaths() []string {
 	paths := keys(duplicates.paths)
 	sort.Strings(paths)
@@ -124,6 +128,19 @@ func (tracker dupTracker) getPool(path string) Duplicates {
 	return tracker.pools[path]
 }
 
+// methods to sort Duplicates by item count
+type duplicatesList []Duplicates
+
+func (p duplicatesList) Len() int {
+	return len(p)
+}
+func (p duplicatesList) Less(i, j int) bool {
+	return p[i].count() < p[j].count()
+}
+func (p duplicatesList) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
 func (tracker dupTracker) getDuplicates() []Duplicates {
 	duplicates := make([]Duplicates, 0)
 	for _, dups := range tracker.pools {
@@ -132,6 +149,7 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 			delete(tracker.pools, path)
 		}
 	}
+	sort.Sort(duplicatesList(duplicates))
 	return duplicates
 }
 
