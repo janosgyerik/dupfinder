@@ -77,7 +77,7 @@ func (duplicates Duplicates) count() int {
 	return len(duplicates.paths)
 }
 
-func (duplicates Duplicates) getPaths() []string {
+func (duplicates Duplicates) GetPaths() []string {
 	paths := keys(duplicates.paths)
 	sort.Strings(paths)
 	return paths
@@ -119,7 +119,7 @@ func (tracker dupTracker) addToPool(path string, pool Duplicates) {
 
 func (tracker dupTracker) mergePools(path1, path2 string) {
 	pool := tracker.getPool(path1)
-	for _, path := range tracker.getPool(path2).getPaths() {
+	for _, path := range tracker.getPool(path2).GetPaths() {
 		tracker.addToPool(path, pool)
 	}
 }
@@ -145,7 +145,7 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 	duplicates := make([]Duplicates, 0)
 	for _, dups := range tracker.pools {
 		duplicates = append(duplicates, dups)
-		for _, path := range dups.getPaths() {
+		for _, path := range dups.GetPaths() {
 			delete(tracker.pools, path)
 		}
 	}
