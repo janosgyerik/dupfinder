@@ -4,6 +4,7 @@ import (
 	"os"
 	"bytes"
 	"io"
+	"sort"
 )
 
 const chunkSize = 64000
@@ -73,7 +74,9 @@ func (duplicates Duplicates) add(path string) {
 }
 
 func (duplicates Duplicates) getPaths() []string {
-	return keys(duplicates.paths)
+	paths := keys(duplicates.paths)
+	sort.Strings(paths)
+	return paths
 }
 
 func keys(m map[string]bool) []string {
