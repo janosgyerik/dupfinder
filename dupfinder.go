@@ -95,6 +95,10 @@ type dupTracker struct {
 	pools map[string]Duplicates
 }
 
+func newDupTracker() dupTracker {
+	return dupTracker{make(map[string]Duplicates)}
+}
+
 func (tracker dupTracker) add(path1, path2 string) {
 	pool1, ok1 := tracker.pools[path1]
 	pool2, ok2 := tracker.pools[path2]
@@ -154,7 +158,7 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 }
 
 func FindDuplicates(paths... string) []Duplicates {
-	tracker := dupTracker{make(map[string]Duplicates)}
+	tracker := newDupTracker()
 
 	// naive brute-force implementation: compare all files against all
 	for i := 0; i < len(paths) - 1; i++ {
