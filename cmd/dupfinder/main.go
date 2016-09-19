@@ -63,7 +63,7 @@ func readFilePathsFromStdin() []string {
 }
 
 func isFile(s string) bool {
-	if _, err := os.Stat(s); err == nil {
+	if stat, err := os.Stat(s); err == nil && !stat.IsDir() {
 		return true
 	}
 	return false
