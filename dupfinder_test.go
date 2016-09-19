@@ -237,3 +237,17 @@ func TestFindDuplicates_two_duplicate_groups(t*testing.T) {
 		t.Errorf("Found %d duplicate files in group 2, expected %d", duplicates[1].count(), 3)
 	}
 }
+
+func TestDupTracker_merge_pools(t*testing.T) {
+	tracker := newDupTracker()
+	tracker.add("path1-1", "path1-2")
+	tracker.add("path1-3", "path1-2")
+
+	duplicates := tracker.getDuplicates()
+	if len(duplicates) != 1 {
+		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
+	}
+	if duplicates[0].count() != 3 {
+		t.Errorf("Found %d duplicate files, expected %d", duplicates[0].count(), 3)
+	}
+}
