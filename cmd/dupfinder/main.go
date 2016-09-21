@@ -23,7 +23,7 @@ type Params struct {
 
 func parseArgs() Params {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s\n\n", os.Args[0])
+		fmt.Printf("Usage: find . -type f | %s\n\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
