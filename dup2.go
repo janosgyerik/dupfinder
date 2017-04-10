@@ -1,5 +1,10 @@
 package dupfinder
 
+import (
+	"os"
+	"io/ioutil"
+)
+
 type Group struct {
 	Paths []string
 }
@@ -7,25 +12,33 @@ type Group struct {
 type FileHandler interface {
 	Id() string
 
-	Size() int
+	Size() int64
 
 	Digest() string
 
-	Content() string
+	Content() []byte
 	// TODO implement this and drop Content()
 	//NewReader() io.Reader
 }
 
 type fileHandler struct {
 	id      string
-	size    int
+	size    int64
 	digest  string
-	content string
+	content []byte
 }
 
-func NewFileHandler(id string) FileHandler {
+func NewFileHandler(path string, file os.FileInfo) FileHandler {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
 	return fileHandler{
-		id: id,
+		id: path,
+		size: file.Size(),
+		digest: string(file.Size()),
+		content: content,
 	}
 }
 
@@ -33,7 +46,7 @@ func (f fileHandler) Id() string {
 	return f.id
 }
 
-func (f fileHandler) Size() int {
+func (f fileHandler) Size() int64 {
 	return f.size
 }
 
@@ -41,7 +54,7 @@ func (f fileHandler) Digest() string {
 	return f.digest
 }
 
-func (f fileHandler) Content() string {
+func (f fileHandler) Content() []byte {
 	return f.content
 }
 
@@ -104,7 +117,8 @@ func (filter digestFilter) Match(f FileHandler, other FileHandler) bool {
 type contentFilter struct{}
 
 func (filter contentFilter) Match(f FileHandler, other FileHandler) bool {
-	return f.Content() == other.Content()
+	// TODO very very very bad comparison
+	return string(f.Content()) == string(other.Content())
 }
 
 type simpleIndex struct {

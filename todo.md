@@ -1,6 +1,5 @@
 ### usable
 
-- tests with real files test data
 - command line client taking paths to search in
 - build steps of the cli
 - finder sub-module to be the engine for finding files

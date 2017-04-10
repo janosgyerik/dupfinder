@@ -4,7 +4,11 @@ import (
 	"testing"
 	"reflect"
 	"strconv"
+	"io/ioutil"
+	"path"
 )
+
+const testDataDir = "testdata"
 
 var testFileCounter = 0
 
@@ -53,7 +57,7 @@ func Test_tracker_add(t*testing.T) {
 
 type testFile struct {
 	id      string
-	size    int
+	size    int64
 	digest  string
 	content string
 }
@@ -70,7 +74,7 @@ func (f testFile) Id() string {
 	return f.id
 }
 
-func (f testFile) Size() int {
+func (f testFile) Size() int64 {
 	return f.size
 }
 
@@ -78,11 +82,11 @@ func (f testFile) Digest() string {
 	return f.digest
 }
 
-func (f testFile) Content() string {
-	return f.content
+func (f testFile) Content() []byte {
+	return []byte(f.content)
 }
 
-func fileWithSize(size int) FileHandler {
+func fileWithSize(size int64) FileHandler {
 	return testFile{size: size}
 }
 
@@ -173,5 +177,66 @@ func Test_should_find_duplicates_in_a_mix(t*testing.T) {
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("got %#v in duplicate group, expected %#v", actual, expected)
+	}
+}
+
+func Test_alldups(t*testing.T) {
+	basedir := path.Join(testDataDir, "alldups")
+	files, err := ioutil.ReadDir(basedir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	index := newIndex()
+	for _, file := range files {
+		p := path.Join(basedir, file.Name())
+		f := NewFileHandler(p, file)
+		index.Add(f)
+	}
+
+	if len(index.Groups()) != 1 {
+		t.Fatalf("got %d duplicate groups, expected 1", len(index.Groups()))
+	}
+
+	if x := len(index.Groups()[0].Paths); x != 3 {
+		t.Fatalf("got %d files in duplicate group, expected 3", x)
+	}
+}
+
+func Test_nodups(t*testing.T) {
+	basedir := path.Join(testDataDir, "nodups")
+	files, err := ioutil.ReadDir(basedir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	index := newIndex()
+	for _, file := range files {
+		p := path.Join(basedir, file.Name())
+		f := NewFileHandler(p, file)
+		index.Add(f)
+	}
+
+	if len(index.Groups()) != 0 {
+		t.Fatalf("got %d duplicate groups, expected none", len(index.Groups()))
+	}
+}
+
+func Test_samesize(t*testing.T) {
+	basedir := path.Join(testDataDir, "samesize")
+	files, err := ioutil.ReadDir(basedir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	index := newIndex()
+	for _, file := range files {
+		p := path.Join(basedir, file.Name())
+		f := NewFileHandler(p, file)
+		index.Add(f)
+	}
+
+	if len(index.Groups()) != 0 {
+		t.Fatalf("got %d duplicate groups, expected none", len(index.Groups()))
 	}
 }
