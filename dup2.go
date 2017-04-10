@@ -16,17 +16,46 @@ type FileHandler interface {
 	//NewReader() io.Reader
 }
 
+type fileHandler struct {
+	id      string
+	size    int
+	digest  string
+	content string
+}
+
+func NewFileHandler(id string) FileHandler {
+	return fileHandler{
+		id: id,
+	}
+}
+
+func (f fileHandler) Id() string {
+	return f.id
+}
+
+func (f fileHandler) Size() int {
+	return f.size
+}
+
+func (f fileHandler) Digest() string {
+	return f.digest
+}
+
+func (f fileHandler) Content() string {
+	return f.content
+}
+
 type Tracker interface {
 	Add(FileHandler, FileHandler)
 
 	Groups() []Group
 }
 
-type myTracker struct {
+type simpleTracker struct {
 	groups map[string]Group
 }
 
-func (tracker *myTracker) Add(f1, f2 FileHandler) {
+func (tracker *simpleTracker) Add(f1, f2 FileHandler) {
 	group, found := tracker.groups[f1.Id()]
 	if found {
 		group.Paths = append(group.Paths, f2.Id())
@@ -36,7 +65,7 @@ func (tracker *myTracker) Add(f1, f2 FileHandler) {
 	tracker.groups[f1.Id()] = group
 }
 
-func (tracker *myTracker) Groups() []Group {
+func (tracker *simpleTracker) Groups() []Group {
 	groups := []Group{}
 	for _, group := range tracker.groups {
 		groups = append(groups, group)
@@ -45,7 +74,7 @@ func (tracker *myTracker) Groups() []Group {
 }
 
 func NewTracker() Tracker {
-	return &myTracker{
+	return &simpleTracker{
 		groups: make(map[string]Group),
 	}
 }
@@ -61,25 +90,42 @@ type Filter interface {
 }
 
 type SizeFilter struct {
-
+	size int
 }
 
-func (filter *SizeFilter) Accept(f FileHandler) bool {
-	return false
+func (filter SizeFilter) Accept(f FileHandler) bool {
+	return filter.size == f.Size()
+}
+
+type DigestFilter struct {
+	digest string
+}
+
+func (filter DigestFilter) Accept(f FileHandler) bool {
+	return filter.digest == f.Digest()
+}
+
+type ContentFilter struct {
+	content string
+}
+
+func (filter ContentFilter) Accept(f FileHandler) bool {
+	return filter.content == f.Content()
 }
 
 type simpleIndex struct {
 	files   []FileHandler
-
 	filters []Filter
-
-	groups  []Group
-
 	tracker Tracker
 }
 
 func (index *simpleIndex) Add(f FileHandler) {
 	files := index.files
+	index.filters = []Filter{
+		SizeFilter{f.Size()},
+		DigestFilter{f.Digest()},
+		ContentFilter{f.Content()},
+	}
 	for _, filter := range index.filters {
 		files = applyFilter(filter, files)
 	}
@@ -105,5 +151,14 @@ func applyFilter(filter Filter, files []FileHandler) []FileHandler {
 }
 
 func (index *simpleIndex) Groups() []Group {
-	return []Group{}
+	return index.tracker.Groups()
+}
+
+func NewIndex() Index {
+	index := simpleIndex{
+		files: []FileHandler{},
+		filters: []Filter{},
+		tracker: NewTracker(),
+	}
+	return &index
 }

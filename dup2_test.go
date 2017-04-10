@@ -8,11 +8,11 @@ import (
 
 var testFileCounter = 0
 
-var index Index = &simpleIndex{
-	tracker: NewTracker(),
+func newIndex() Index {
+	return NewIndex()
 }
 
-func Test_testTracker_add(t*testing.T) {
+func Test_tracker_add(t*testing.T) {
 	tracker := NewTracker()
 
 	if len(tracker.Groups()) != 0 {
@@ -117,6 +117,8 @@ func Test_fileWithDigest(t*testing.T) {
 }
 
 func Test_should_not_find_duplicates_with_different_size(t*testing.T) {
+	index := newIndex()
+
 	index.Add(fileWithSize(1))
 	index.Add(fileWithSize(2))
 
@@ -126,6 +128,8 @@ func Test_should_not_find_duplicates_with_different_size(t*testing.T) {
 }
 
 func Test_should_not_find_duplicates_with_different_digest(t*testing.T) {
+	index := newIndex()
+
 	index.Add(fileWithDigest("1"))
 	index.Add(fileWithDigest("2"))
 
@@ -135,6 +139,8 @@ func Test_should_not_find_duplicates_with_different_digest(t*testing.T) {
 }
 
 func Test_should_find_duplicates_in_two_identical_files(t*testing.T) {
+	index := newIndex()
+
 	file := testFile{
 		size: 1,
 		digest: "1",
@@ -148,6 +154,8 @@ func Test_should_find_duplicates_in_two_identical_files(t*testing.T) {
 }
 
 func Test_should_find_duplicates_in_a_mix(t*testing.T) {
+	index := newIndex()
+
 	file1 := testFile{size: 1, digest: "1", content: "1"}
 	file2 := testFile{size: 1, digest: "1", content: "1"}
 	file3 := testFile{size: 1, digest: "1", content: "3"}
