@@ -86,31 +86,25 @@ type Index interface {
 }
 
 type Filter interface {
-	Accept(FileHandler) bool
+	Match(base, other FileHandler) bool
 }
 
-type SizeFilter struct {
-	size int
+type SizeFilter struct{}
+
+func (filter SizeFilter) Match(f FileHandler, other FileHandler) bool {
+	return f.Size() == other.Size()
 }
 
-func (filter SizeFilter) Accept(f FileHandler) bool {
-	return filter.size == f.Size()
+type DigestFilter struct{}
+
+func (filter DigestFilter) Match(f FileHandler, other FileHandler) bool {
+	return f.Digest() == other.Digest()
 }
 
-type DigestFilter struct {
-	digest string
-}
+type ContentFilter struct{}
 
-func (filter DigestFilter) Accept(f FileHandler) bool {
-	return filter.digest == f.Digest()
-}
-
-type ContentFilter struct {
-	content string
-}
-
-func (filter ContentFilter) Accept(f FileHandler) bool {
-	return filter.content == f.Content()
+func (filter ContentFilter) Match(f FileHandler, other FileHandler) bool {
+	return f.Content() == other.Content()
 }
 
 type simpleIndex struct {
@@ -121,13 +115,8 @@ type simpleIndex struct {
 
 func (index *simpleIndex) Add(f FileHandler) {
 	files := index.files
-	index.filters = []Filter{
-		SizeFilter{f.Size()},
-		DigestFilter{f.Digest()},
-		ContentFilter{f.Content()},
-	}
 	for _, filter := range index.filters {
-		files = applyFilter(filter, files)
+		files = applyFilter(filter, files, f)
 	}
 
 	switch len(files) {
@@ -140,10 +129,10 @@ func (index *simpleIndex) Add(f FileHandler) {
 	}
 }
 
-func applyFilter(filter Filter, files []FileHandler) []FileHandler {
+func applyFilter(filter Filter, files []FileHandler, base FileHandler) []FileHandler {
 	filtered := []FileHandler{}
 	for _, file := range files {
-		if filter.Accept(file) {
+		if filter.Match(base, file) {
 			filtered = append(filtered, file)
 		}
 	}
@@ -157,7 +146,11 @@ func (index *simpleIndex) Groups() []Group {
 func NewIndex() Index {
 	index := simpleIndex{
 		files: []FileHandler{},
-		filters: []Filter{},
+		filters: []Filter{
+			SizeFilter{},
+			DigestFilter{},
+			ContentFilter{},
+		},
 		tracker: NewTracker(),
 	}
 	return &index
