@@ -89,21 +89,21 @@ type Filter interface {
 	Match(base, other FileHandler) bool
 }
 
-type SizeFilter struct{}
+type sizeFilter struct{}
 
-func (filter SizeFilter) Match(f FileHandler, other FileHandler) bool {
+func (filter sizeFilter) Match(f FileHandler, other FileHandler) bool {
 	return f.Size() == other.Size()
 }
 
-type DigestFilter struct{}
+type digestFilter struct{}
 
-func (filter DigestFilter) Match(f FileHandler, other FileHandler) bool {
+func (filter digestFilter) Match(f FileHandler, other FileHandler) bool {
 	return f.Digest() == other.Digest()
 }
 
-type ContentFilter struct{}
+type contentFilter struct{}
 
-func (filter ContentFilter) Match(f FileHandler, other FileHandler) bool {
+func (filter contentFilter) Match(f FileHandler, other FileHandler) bool {
 	return f.Content() == other.Content()
 }
 
@@ -147,9 +147,9 @@ func NewIndex() Index {
 	index := simpleIndex{
 		files: []FileHandler{},
 		filters: []Filter{
-			SizeFilter{},
-			DigestFilter{},
-			ContentFilter{},
+			sizeFilter{},
+			digestFilter{},
+			contentFilter{},
 		},
 		tracker: NewTracker(),
 	}
