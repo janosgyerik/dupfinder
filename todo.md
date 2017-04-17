@@ -1,7 +1,6 @@
 ### important performance improvements
 
 - compute digest
-- compare content chunk by chunk
 - compare speed against java implementation
 - test run on home pc
 

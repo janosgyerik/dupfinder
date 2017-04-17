@@ -2,7 +2,7 @@ package dupfinder
 
 import (
 	"os"
-	"io/ioutil"
+	"io"
 )
 
 type Group struct {
@@ -10,35 +10,27 @@ type Group struct {
 }
 
 type FileHandler interface {
+	// TODO rename to Path
 	Id() string
 
 	Size() int64
 
 	Digest() string
 
-	Content() []byte
-	// TODO implement this and drop Content()
-	//NewReader() io.Reader
+	NewReadCloser() (io.ReadCloser, error)
 }
 
 type fileHandler struct {
 	id      string
 	size    int64
 	digest  string
-	content []byte
 }
 
 func NewFileHandler(path string, file os.FileInfo) FileHandler {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-
 	return fileHandler{
 		id: path,
 		size: file.Size(),
 		digest: string(file.Size()),
-		content: content,
 	}
 }
 
@@ -54,8 +46,8 @@ func (f fileHandler) Digest() string {
 	return f.digest
 }
 
-func (f fileHandler) Content() []byte {
-	return f.content
+func (f fileHandler) NewReadCloser() (io.ReadCloser, error) {
+	return os.Open(f.Id())
 }
 
 type Tracker interface {
@@ -117,8 +109,23 @@ func (filter digestFilter) Match(f FileHandler, other FileHandler) bool {
 type contentFilter struct{}
 
 func (filter contentFilter) Match(f FileHandler, other FileHandler) bool {
-	// TODO very very very bad comparison
-	return string(f.Content()) == string(other.Content())
+	fd1, err := f.NewReadCloser()
+	defer fd1.Close()
+	if err != nil {
+		return false
+	}
+
+	fd2, err := other.NewReadCloser()
+	defer fd2.Close()
+	if err != nil {
+		return false
+	}
+
+	cmp, err := CompareReaders(fd1, fd2)
+	if err != nil {
+		return false
+	}
+	return cmp == 0
 }
 
 type simpleIndex struct {

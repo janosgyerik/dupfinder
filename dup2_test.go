@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"io/ioutil"
 	"path"
+	"io"
+	"strings"
 )
 
 const testDataDir = "testdata"
@@ -82,8 +84,20 @@ func (f testFile) Digest() string {
 	return f.digest
 }
 
-func (f testFile) Content() []byte {
-	return []byte(f.content)
+func (f testFile) NewReadCloser() (io.ReadCloser, error) {
+	return testReadCloser{strings.NewReader(f.content)}, nil
+}
+
+type testReadCloser struct {
+	reader io.Reader
+}
+
+func (t testReadCloser) Read(buf []byte) (int, error) {
+	return t.reader.Read(buf)
+}
+
+func (t testReadCloser) Close() error {
+	return nil
 }
 
 func fileWithSize(size int64) FileHandler {
