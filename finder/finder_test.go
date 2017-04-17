@@ -14,13 +14,17 @@ func finderWithFilters(filters... Filter) Finder {
 	return DefaultFinder{filters: filters}
 }
 
-func Test_should_find_all_files_and_only_files(t*testing.T) {
-	finder := finderWithFilters()
-
+func findPaths(finder Finder) []string {
 	paths := []string{}
 	for path := range finder.Find(basedir) {
 		paths = append(paths, path)
 	}
+	return paths
+}
+
+func Test_should_find_all_files_and_only_files(t*testing.T) {
+	finder := finderWithFilters()
+	paths := findPaths(finder)
 
 	expected := 9
 	if len(paths) != expected {
@@ -32,11 +36,7 @@ func Test_should_find_all_files_and_only_files(t*testing.T) {
 
 func Test_should_find_size30_for_MinSize30(t*testing.T) {
 	finder := finderWithFilters(MinSizeFilter{Size: 30})
-
-	paths := []string{}
-	for path := range finder.Find(basedir) {
-		paths = append(paths, path)
-	}
+	paths := findPaths(finder)
 
 	if len(paths) != 3 {
 		t.Fatalf("got %d files, expected 3", len(paths))
