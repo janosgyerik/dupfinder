@@ -13,7 +13,6 @@
 - add -stdin flag to read path list from stdin
 - add -0 flag to read null-delimited path list from stdin
 - clean up interface, hide implementation details
-- delete old crap
 - document public types and functions
 - publish documentation
 - setup build badges like portping
