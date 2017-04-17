@@ -13,12 +13,18 @@ type Filter interface {
 	Accept(path string, info os.FileInfo) bool
 }
 
-type MinSizeFilter struct {
+type minSizeFilter struct {
 	Size int64
 }
 
-func (filter MinSizeFilter) Accept(path string, info os.FileInfo) bool {
+func (filter minSizeFilter) Accept(path string, info os.FileInfo) bool {
 	return info.Size() >= filter.Size
+}
+
+var Filters = struct {
+	MinSize func(size int64) Filter
+} {
+	MinSize: func(size int64) Filter { return minSizeFilter{size} },
 }
 
 type DefaultFinder struct {
