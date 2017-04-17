@@ -107,6 +107,7 @@ func (filter digestFilter) Match(f FileHandler, other FileHandler) bool {
 
 type contentFilter struct{}
 
+// TODO return errors, let caller handle
 func (filter contentFilter) Match(f FileHandler, other FileHandler) bool {
 	fd1, err := f.NewReadCloser()
 	defer fd1.Close()
@@ -145,6 +146,7 @@ func (index *simpleIndex) Add(f FileHandler) {
 	case 1:
 		index.tracker.Add(files[0], f)
 	default:
+		// TODO return error instead, let caller handle (+ unit test it)
 		panic("more than one duplicates found in the unique index")
 	}
 }

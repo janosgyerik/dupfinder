@@ -2,7 +2,10 @@
 
 - compute digest
 - compare speed against java implementation
-- test run on home pc
+    - seems generally faster in Go, but...
+    - ... there seems to be a bug. Takes extremely long
+     to process ~/Pictures, overheating CPU (interrupted)
+- test run on home pc, entire media disk
 
 ### polishing
 
