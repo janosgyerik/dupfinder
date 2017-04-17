@@ -200,22 +200,6 @@ func NewIndex() Index {
 	return &index
 }
 
-func CompareFiles(path1, path2 string) (int, error) {
-	fd1, err := os.Open(path1)
-	defer fd1.Close()
-	if err != nil {
-		return 0, err
-	}
-
-	fd2, err := os.Open(path2)
-	defer fd2.Close()
-	if err != nil {
-		return 0, err
-	}
-
-	return CompareReaders(fd1, fd2)
-}
-
 func CompareReaders(fd1, fd2 io.Reader) (int, error) {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)
@@ -332,21 +316,4 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 	}
 	sort.Sort(duplicatesList(duplicates))
 	return duplicates
-}
-
-func FindDuplicates(paths... string) []Duplicates {
-	tracker := newDupTracker()
-
-	// naive brute-force implementation: compare all files against all
-	for i := 0; i < len(paths) - 1; i++ {
-		for j := i + 1; j < len(paths); j++ {
-			path1 := paths[i]
-			path2 := paths[j]
-			if cmp, err := CompareFiles(path1, path2); err == nil && cmp == 0 {
-				tracker.add(path1, path2)
-			}
-		}
-	}
-
-	return tracker.getDuplicates()
 }
