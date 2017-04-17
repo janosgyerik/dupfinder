@@ -27,11 +27,11 @@ var Filters = struct {
 	MinSize: func(size int64) Filter { return minSizeFilter{size} },
 }
 
-type DefaultFinder struct {
+type defaultFinder struct {
 	filters []Filter
 }
 
-func (finder DefaultFinder) Find(basedir string) <-chan string {
+func (finder defaultFinder) Find(basedir string) <-chan string {
 	paths := make(chan string)
 	walkfn := func(path string, info os.FileInfo, err error) error {
 		for _, filter := range finder.filters {
@@ -49,4 +49,8 @@ func (finder DefaultFinder) Find(basedir string) <-chan string {
 		close(paths)
 	}()
 	return paths
+}
+
+func NewFinder(filters... Filter) Finder {
+	return defaultFinder{filters: filters}
 }

@@ -10,10 +10,6 @@ const testDataDir = "testdata"
 
 var basedir = testDataDir
 
-func finderWithFilters(filters... Filter) Finder {
-	return DefaultFinder{filters: filters}
-}
-
 func findPaths(finder Finder) []string {
 	paths := []string{}
 	for path := range finder.Find(basedir) {
@@ -23,7 +19,7 @@ func findPaths(finder Finder) []string {
 }
 
 func Test_should_find_all_files_and_only_files(t*testing.T) {
-	finder := finderWithFilters()
+	finder := NewFinder()
 	paths := findPaths(finder)
 
 	expected := 9
@@ -35,7 +31,7 @@ func Test_should_find_all_files_and_only_files(t*testing.T) {
 }
 
 func Test_should_find_size30_for_MinSize30(t*testing.T) {
-	finder := finderWithFilters(Filters.MinSize(30))
+	finder := NewFinder(Filters.MinSize(30))
 	paths := findPaths(finder)
 
 	if len(paths) != 3 {
