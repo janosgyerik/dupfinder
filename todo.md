@@ -1,10 +1,3 @@
-### usable
-
-- command line client taking paths to search in
-- build steps of the cli
-- finder sub-module to be the engine for finding files
-- read content
-
 ### important performance improvements
 
 - compute digest
@@ -14,12 +7,13 @@
 
 ### polishing
 
-- add useful predicates for finder
-- add support for file list on stdin
-- add support for -0 flag when reading file list from stdin 
-- clean up interface
+- add size scale indicator for -minSize
+- add -stdin flag to read path list from stdin
+- add -0 flag to read null-delimited path list from stdin
+- clean up interface, hide implementation details
 - delete old crap
-- write good documentation
+- document public types and functions
 - publish documentation
 - setup build badges like portping
+- post on code review
 - post on blog

@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"bufio"
 	"github.com/janosgyerik/dupfinder"
+	"github.com/janosgyerik/dupfinder/finder"
 )
-
-// TODO
-// take list of files from stdin
-// print out duplicates visually grouped
 
 func exit() {
 	flag.Usage()
@@ -18,21 +15,19 @@ func exit() {
 }
 
 type Params struct {
-	paths []string
+	paths    []string
+	minSize  int64
 }
 
 func parseArgs() Params {
-	flag.Usage = func() {
-		fmt.Printf("Usage: find . -type f | %s\n\n", os.Args[0])
-		flag.PrintDefaults()
-	}
+	minSizePtr := flag.Int64("minSize", 0, "minimum file size")
 
 	flag.Parse()
 
 	paths := make([]string, 0)
 	if len(flag.Args()) > 0 {
 		for _, arg := range flag.Args() {
-			if isFile(arg) {
+			if isFileOrDir(arg) {
 				paths = append(paths, arg)
 			}
 		}
@@ -46,6 +41,7 @@ func parseArgs() Params {
 
 	return Params{
 		paths: paths,
+		minSize: *minSizePtr,
 	}
 }
 
@@ -54,7 +50,7 @@ func readFilePathsFromStdin() []string {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		if path := scanner.Text(); isFile(path) {
+		if path := scanner.Text(); isFileOrDir(path) {
 			paths = append(paths, path)
 		}
 	}
@@ -62,18 +58,26 @@ func readFilePathsFromStdin() []string {
 	return paths
 }
 
-func isFile(s string) bool {
-	if stat, err := os.Stat(s); err == nil && !stat.IsDir() {
-		return true
-	}
-	return false
+func isFileOrDir(s string) bool {
+	_, err := os.Stat(s)
+	return err == nil
 }
 
 func main() {
 	params := parseArgs()
 
-	for _, dups := range dupfinder.FindDuplicates(params.paths...) {
-		for _, path := range dups.GetPaths() {
+	finder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
+	index := dupfinder.NewIndex()
+
+	for _, path := range params.paths {
+		for filepath := range finder.Find(path) {
+			info, _ := os.Stat(filepath)
+			index.Add(dupfinder.NewFileHandler(filepath, info))
+		}
+	}
+
+	for _, dups := range index.Groups() {
+		for _, path := range dups.Paths {
 			fmt.Println(path)
 		}
 		fmt.Println()
