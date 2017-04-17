@@ -10,8 +10,7 @@ type Group struct {
 }
 
 type FileHandler interface {
-	// TODO rename to Path
-	Id() string
+	Path() string
 
 	Size() int64
 
@@ -21,21 +20,21 @@ type FileHandler interface {
 }
 
 type fileHandler struct {
-	id      string
-	size    int64
-	digest  string
+	path   string
+	size   int64
+	digest string
 }
 
 func NewFileHandler(path string, file os.FileInfo) FileHandler {
 	return fileHandler{
-		id: path,
+		path: path,
 		size: file.Size(),
 		digest: string(file.Size()),
 	}
 }
 
-func (f fileHandler) Id() string {
-	return f.id
+func (f fileHandler) Path() string {
+	return f.path
 }
 
 func (f fileHandler) Size() int64 {
@@ -47,7 +46,7 @@ func (f fileHandler) Digest() string {
 }
 
 func (f fileHandler) NewReadCloser() (io.ReadCloser, error) {
-	return os.Open(f.Id())
+	return os.Open(f.Path())
 }
 
 type Tracker interface {
@@ -61,13 +60,13 @@ type simpleTracker struct {
 }
 
 func (tracker *simpleTracker) Add(f1, f2 FileHandler) {
-	group, found := tracker.groups[f1.Id()]
+	group, found := tracker.groups[f1.Path()]
 	if found {
-		group.Paths = append(group.Paths, f2.Id())
+		group.Paths = append(group.Paths, f2.Path())
 	} else {
-		group = Group{Paths: []string{f1.Id(), f2.Id()}}
+		group = Group{Paths: []string{f1.Path(), f2.Path()}}
 	}
-	tracker.groups[f1.Id()] = group
+	tracker.groups[f1.Path()] = group
 }
 
 func (tracker *simpleTracker) Groups() []Group {

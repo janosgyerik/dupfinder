@@ -58,7 +58,7 @@ func Test_tracker_add(t*testing.T) {
 }
 
 type testFile struct {
-	id      string
+	path    string
 	size    int64
 	digest  string
 	content string
@@ -68,12 +68,12 @@ func newTestFile() testFile {
 	testFileCounter += 1
 
 	return testFile{
-		id: strconv.Itoa(testFileCounter),
+		path: strconv.Itoa(testFileCounter),
 	}
 }
 
-func (f testFile) Id() string {
-	return f.id
+func (f testFile) Path() string {
+	return f.path
 }
 
 func (f testFile) Size() int64 {
@@ -187,7 +187,7 @@ func Test_should_find_duplicates_in_a_mix(t*testing.T) {
 	}
 
 	actual := index.Groups()[0].Paths
-	expected := []string{file1.Id(), file2.Id()}
+	expected := []string{file1.Path(), file2.Path()}
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("got %#v in duplicate group, expected %#v", actual, expected)
