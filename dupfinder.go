@@ -10,11 +10,14 @@ import (
 const chunkSize = 64000
 
 func chunker(r io.Reader, ch chan <- []byte) {
+	buf := make([]byte, chunkSize)
 	for {
-		buf := make([]byte, chunkSize)
-		_, err := r.Read(buf)
+		n, err := r.Read(buf)
 
 		if err != nil {
+			if err == io.EOF {
+				ch <- buf[:n]
+			}
 			close(ch)
 			return
 		}
