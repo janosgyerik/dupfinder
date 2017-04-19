@@ -8,24 +8,6 @@ import (
 
 const chunkSize = 64000
 
-func chunker(r io.Reader, ch chan <- []byte) {
-	buf := make([]byte, chunkSize)
-	for {
-		n, err := r.Read(buf)
-
-		if err != nil {
-			if err == io.EOF {
-				ch <- buf[:n]
-			}
-			close(ch)
-			return
-		}
-
-		ch <- buf
-	}
-}
-
-
 type Group struct {
 	Paths []string
 }
@@ -197,6 +179,23 @@ func NewIndex() Index {
 		tracker: NewTracker(),
 	}
 	return &index
+}
+
+func chunker(r io.Reader, ch chan <- []byte) {
+	buf := make([]byte, chunkSize)
+	for {
+		n, err := r.Read(buf)
+
+		if err != nil {
+			if err == io.EOF {
+				ch <- buf[:n]
+			}
+			close(ch)
+			return
+		}
+
+		ch <- buf
+	}
 }
 
 func CompareReaders(fd1, fd2 io.Reader) (int, error) {

@@ -14,6 +14,8 @@
 - add -0 flag to read null-delimited path list from stdin
 - clean up interface, hide implementation details
 - document public types and functions
+- cleanup all TODOs
+- 100% test coverage
 - publish documentation
 - setup build badges like portping
 - post on code review
