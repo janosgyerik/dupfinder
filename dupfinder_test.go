@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func TestCompareReaders_same_file(t*testing.T) {
+func Test_CompareReaders_same_file(t*testing.T) {
 	content := "dummy content"
 	reader1 := strings.NewReader(content)
 	reader2 := strings.NewReader(content)
@@ -24,7 +24,7 @@ func TestCompareReaders_same_file(t*testing.T) {
 	}
 }
 
-func TestCompareReaders_size_ascending(t*testing.T) {
+func Test_CompareReaders_size_ascending(t*testing.T) {
 	smaller := strings.NewReader("dummy content")
 	bigger := strings.NewReader("longer dummy content")
 
@@ -39,7 +39,7 @@ func TestCompareReaders_size_ascending(t*testing.T) {
 	}
 }
 
-func TestCompareReaders_size_descending(t*testing.T) {
+func Test_CompareReaders_size_descending(t*testing.T) {
 	smaller := strings.NewReader("dummy content")
 	bigger := strings.NewReader("longer dummy content")
 
@@ -54,7 +54,7 @@ func TestCompareReaders_size_descending(t*testing.T) {
 	}
 }
 
-func TestCompareReaders_same_size_content_ascending(t*testing.T) {
+func Test_CompareReaders_same_size_content_ascending(t*testing.T) {
 	lower := strings.NewReader("dummy content a")
 	higher := strings.NewReader("dummy content b")
 
@@ -69,7 +69,7 @@ func TestCompareReaders_same_size_content_ascending(t*testing.T) {
 	}
 }
 
-func TestCompareReaders_same_size_content_descending(t*testing.T) {
+func Test_CompareReaders_same_size_content_descending(t*testing.T) {
 	lower := strings.NewReader("dummy content a")
 	higher := strings.NewReader("dummy content b")
 
@@ -84,7 +84,7 @@ func TestCompareReaders_same_size_content_descending(t*testing.T) {
 	}
 }
 
-func TestCompareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
+func Test_CompareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
 	file, err := ioutil.TempFile(os.TempDir(), "dummy")
 	defer os.Remove(file.Name())
 
@@ -99,7 +99,7 @@ func TestCompareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
 	}
 }
 
-func TestCompareFiles_equal_if_both_empty_dummy(t*testing.T) {
+func Test_CompareFiles_equal_if_both_empty_dummy(t*testing.T) {
 	dummy1, err := ioutil.TempFile(os.TempDir(), "dummy1")
 	defer os.Remove(dummy1.Name())
 
@@ -117,7 +117,7 @@ func TestCompareFiles_equal_if_both_empty_dummy(t*testing.T) {
 	}
 }
 
-func TestCompareFiles_empty_comes_before_nonempty(t*testing.T) {
+func Test_CompareFiles_empty_comes_before_nonempty(t*testing.T) {
 	empty, err := ioutil.TempFile(os.TempDir(), "empty")
 	defer os.Remove(empty.Name())
 
@@ -137,14 +137,14 @@ func TestCompareFiles_empty_comes_before_nonempty(t*testing.T) {
 	}
 }
 
-func TestCompareFiles_fails_if_both_nonexistent(t*testing.T) {
+func Test_CompareFiles_fails_if_both_nonexistent(t*testing.T) {
 	_, err := CompareFiles("/nonexistent1", "/nonexistent2")
 	if err == nil {
 		t.Error("Compare(nonexistent1, nonexistent2) should have raised error")
 	}
 }
 
-func TestCompareFiles_fails_if_first_nonexistent(t*testing.T) {
+func Test_CompareFiles_fails_if_first_nonexistent(t*testing.T) {
 	file, err := ioutil.TempFile(os.TempDir(), "dummy")
 	defer os.Remove(file.Name())
 
@@ -154,7 +154,7 @@ func TestCompareFiles_fails_if_first_nonexistent(t*testing.T) {
 	}
 }
 
-func TestCompareFiles_fails_if_second_nonexistent(t*testing.T) {
+func Test_CompareFiles_fails_if_second_nonexistent(t*testing.T) {
 	file, err := ioutil.TempFile(os.TempDir(), "dummy")
 	defer os.Remove(file.Name())
 
@@ -191,7 +191,7 @@ func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
 	return FindDuplicates(paths...)
 }
 
-func TestFindDuplicates_two_duplicates(t*testing.T) {
+func Test_FindDuplicates_two_duplicates(t*testing.T) {
 	duplicates := findDuplicates(0, 2)
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
@@ -201,7 +201,7 @@ func TestFindDuplicates_two_duplicates(t*testing.T) {
 	}
 }
 
-func TestFindDuplicates_three_duplicates(t*testing.T) {
+func Test_FindDuplicates_three_duplicates(t*testing.T) {
 	duplicates := findDuplicates(0, 3)
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
@@ -211,21 +211,21 @@ func TestFindDuplicates_three_duplicates(t*testing.T) {
 	}
 }
 
-func TestFindDuplicates_two_different(t*testing.T) {
+func Test_FindDuplicates_two_different(t*testing.T) {
 	duplicates := findDuplicates(2)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
 }
 
-func TestFindDuplicates_three_different(t*testing.T) {
+func Test_FindDuplicates_three_different(t*testing.T) {
 	duplicates := findDuplicates(3)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
 }
 
-func TestFindDuplicates_two_duplicate_groups(t*testing.T) {
+func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
 	duplicates := findDuplicates(0, 2, 3)
 	if len(duplicates) != 2 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 2)
@@ -238,7 +238,7 @@ func TestFindDuplicates_two_duplicate_groups(t*testing.T) {
 	}
 }
 
-func TestDupTracker_merge_pools(t*testing.T) {
+func Test_DupTracker_merge_pools(t*testing.T) {
 	tracker := newDupTracker()
 	tracker.add("path1-1", "path1-2")
 	tracker.add("path1-3", "path1-2")
