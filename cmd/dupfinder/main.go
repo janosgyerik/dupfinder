@@ -67,17 +67,16 @@ func main() {
 	params := parseArgs()
 
 	finder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
-	index := dupfinder.NewIndex()
 
+	paths := []string{}
 	for _, path := range params.paths {
-		for filepath := range finder.Find(path) {
-			info, _ := os.Stat(filepath)
-			index.Add(dupfinder.NewFileHandler(filepath, info))
+		for path := range finder.Find(path) {
+			paths = append(paths, path)
 		}
 	}
 
-	for _, dups := range index.Groups() {
-		for _, path := range dups.Paths {
+	for _, dup := range dupfinder.FindDuplicates(paths...) {
+		for _, path := range dup.GetPaths() {
 			fmt.Println(path)
 		}
 		fmt.Println()
