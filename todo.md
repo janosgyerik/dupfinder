@@ -1,6 +1,6 @@
 ### important performance improvements
 
-- compute digest
+- implement merge sort principle
 - compare speed against java implementation
     - seems generally faster in Go, but...
     - ... there seems to be a bug. Takes extremely long

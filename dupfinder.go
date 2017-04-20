@@ -26,7 +26,29 @@ func chunker(r io.Reader, ch chan <- []byte) {
 	}
 }
 
+// TODO improve error handling: files with I/O errors should not be compared to anything, add to black list
+
+// TODO no need to expose publicly
 func CompareFiles(path1, path2 string) (int, error) {
+	// TODO extract to method: compare by size
+	st1, err := os.Stat(path1)
+	if err != nil {
+		return 0, err
+	}
+
+	st2, err := os.Stat(path2)
+	if err != nil {
+		return 0, err
+	}
+
+	if st1.Size() < st2.Size() {
+		return -1, nil
+	}
+	if st1.Size() > st2.Size() {
+		return 1, nil
+	}
+
+	// TODO extract to method: compare by content
 	fd1, err := os.Open(path1)
 	defer fd1.Close()
 	if err != nil {
@@ -42,6 +64,9 @@ func CompareFiles(path1, path2 string) (int, error) {
 	return CompareReaders(fd1, fd2)
 }
 
+// TODO no need to expose publicly
+// TODO compare performance of serial and parallel chunkers
+// TODO find on internet techniques to process files in parallel correctly
 func CompareReaders(fd1, fd2 io.Reader) (int, error) {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)
@@ -164,6 +189,7 @@ func FindDuplicates(paths... string) []Duplicates {
 	tracker := newDupTracker()
 
 	// naive brute-force implementation: compare all files against all
+	// TODO improve using merge sort
 	for i := 0; i < len(paths) - 1; i++ {
 		for j := i + 1; j < len(paths); j++ {
 			path1 := paths[i]
