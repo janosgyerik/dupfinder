@@ -7,6 +7,7 @@ import (
 
 type Finder interface {
 	Find(basedir string) <-chan string
+	FindAll(basedir string) []string
 }
 
 type Filter interface {
@@ -48,6 +49,14 @@ func (finder defaultFinder) Find(basedir string) <-chan string {
 		filepath.Walk(basedir, walkfn)
 		close(paths)
 	}()
+	return paths
+}
+
+func (finder defaultFinder) FindAll(basedir string) []string {
+	paths := []string{}
+	for path := range finder.Find(basedir) {
+		paths = append(paths, path)
+	}
 	return paths
 }
 

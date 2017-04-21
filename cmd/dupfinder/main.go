@@ -70,12 +70,10 @@ func main() {
 
 	paths := []string{}
 	for _, path := range params.paths {
-		for path := range finder.Find(path) {
-			paths = append(paths, path)
-		}
+		paths = append(paths, finder.FindAll(path)...)
 	}
 
-	for _, dup := range dupfinder.FindDuplicates(paths...) {
+	for _, dup := range dupfinder.FindDuplicates(paths) {
 		for _, path := range dup.GetPaths() {
 			fmt.Println(path)
 		}

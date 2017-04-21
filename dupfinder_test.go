@@ -6,7 +6,11 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"github.com/janosgyerik/dupfinder/finder"
+	"path/filepath"
 )
+
+const testdataBasedir = "testdata"
 
 func Test_CompareReaders_same_file(t*testing.T) {
 	content := "dummy content"
@@ -188,7 +192,7 @@ func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
 		}
 	}
 
-	return FindDuplicates(paths...)
+	return FindDuplicates(paths)
 }
 
 func Test_FindDuplicates_two_duplicates(t*testing.T) {
@@ -249,5 +253,33 @@ func Test_DupTracker_merge_pools(t*testing.T) {
 	}
 	if duplicates[0].count() != 3 {
 		t.Errorf("Found %d duplicate files, expected %d", duplicates[0].count(), 3)
+	}
+}
+
+func findPaths(basename string) []string {
+	return finder.NewFinder().FindAll(filepath.Join(testdataBasedir, basename))
+}
+
+func Test_nodups(t*testing.T) {
+	duplicates := FindDuplicates(findPaths("nodups"))
+
+	if len(duplicates) > 0 {
+		t.Fatal("found duplicates in different files:", duplicates)
+	}
+}
+
+func Test_samesize(t*testing.T) {
+	duplicates := FindDuplicates(findPaths("samesize"))
+
+	if len(duplicates) > 0 {
+		t.Fatal("found duplicates in different files with same size:", duplicates)
+	}
+}
+
+func Test_alldups(t*testing.T) {
+	duplicates := FindDuplicates(findPaths("alldups"))
+
+	if len(duplicates) != 1 {
+		t.Fatalf("got %d duplicate groups, expected 1", len(duplicates))
 	}
 }

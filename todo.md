@@ -9,7 +9,7 @@
 
 ### polishing
 
-- add size scale indicator for -minSize
+- add size scale shortcut for -minSize
 - add -stdin flag to read path list from stdin
 - add -0 flag to read null-delimited path list from stdin
 - clean up interface, hide implementation details

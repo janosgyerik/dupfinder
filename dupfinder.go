@@ -185,7 +185,7 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 	return duplicates
 }
 
-func FindDuplicates(paths... string) []Duplicates {
+func FindDuplicates(paths []string) []Duplicates {
 	tracker := newDupTracker()
 
 	// naive brute-force implementation: compare all files against all
