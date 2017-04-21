@@ -188,17 +188,51 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 func FindDuplicates(paths []string) []Duplicates {
 	tracker := newDupTracker()
 
-	// naive brute-force implementation: compare all files against all
-	// TODO improve using merge sort
-	for i := 0; i < len(paths) - 1; i++ {
-		for j := i + 1; j < len(paths); j++ {
-			path1 := paths[i]
-			path2 := paths[j]
-			if cmp, err := CompareFiles(path1, path2); err == nil && cmp == 0 {
-				tracker.add(path1, path2)
-			}
+	mergesort(tracker, paths, 0, len(paths))
+
+	return tracker.getDuplicates()
+}
+
+func mergesort(tracker dupTracker, paths []string, low, high int) {
+	if low + 1 >= high {
+		return
+	}
+
+	mid := low + (high - low) / 2
+	mergesort(tracker, paths, low, mid)
+	mergesort(tracker, paths, mid, high)
+	merge(tracker, paths, low, mid, high)
+}
+
+func merge(tracker dupTracker, paths []string, low, mid, high int) {
+	work := make([]string, 0, high - low)
+
+	var i, j int
+	for i, j = low, mid; i < mid && j < high; {
+		p1 := paths[i]
+		p2 := paths[j]
+		cmp, err := CompareFiles(p1, p2)
+		if err != nil {
+			panic(err)
+		}
+		if cmp == 0 {
+			tracker.add(p1, p2)
+			work = append(work, p1, p2)
+			i++
+			j++
+		} else if cmp < 0 {
+			work = append(work, p1)
+			i++
+		} else {
+			work = append(work, p2)
+			j++
 		}
 	}
 
-	return tracker.getDuplicates()
+	work = append(work, paths[i:mid]...)
+	work = append(work, paths[j:high]...)
+
+	for i = low; i < high; i++ {
+		paths[i] = work[i - low]
+	}
 }
