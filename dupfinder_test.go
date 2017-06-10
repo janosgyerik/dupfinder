@@ -144,6 +144,12 @@ func newTempFile(t*testing.T, name string) *os.File {
 	return file
 }
 
+func newTempFileWithContent(t*testing.T, content string) *os.File {
+	file := newTempFile(t, "dummy")
+	file.WriteString(content)
+	return file
+}
+
 func Test_compareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
 	file := newTempFile(t, "dummy")
 	defer os.Remove(file.Name())
@@ -224,17 +230,11 @@ func Test_compareFiles_fails_if_second_nonexistent(t*testing.T) {
 	}
 }
 
-func createTempFileWithContent(content string) *os.File {
-	file, _ := ioutil.TempFile(os.TempDir(), "prefix")
-	file.WriteString(content)
-	return file
-}
-
-func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
+func findDuplicates(t*testing.T, distinctCount int, groupSizes... int) []Duplicates {
 	paths := make([]string, 0)
 
 	for i := 0; i < distinctCount; i++ {
-		file := createTempFileWithContent("dummy distinct " + strconv.Itoa(i))
+		file := newTempFileWithContent(t, "dummy distinct " + strconv.Itoa(i))
 		defer os.Remove(file.Name())
 		paths = append(paths, file.Name())
 	}
@@ -242,7 +242,7 @@ func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
 	for group, groupSize := range groupSizes {
 		content := "dummy group " + strconv.Itoa(group)
 		for i := 0; i < groupSize; i++ {
-			file := createTempFileWithContent(content)
+			file := newTempFileWithContent(t, content)
 			defer os.Remove(file.Name())
 			paths = append(paths, file.Name())
 		}
@@ -252,7 +252,7 @@ func findDuplicates(distinctCount int, groupSizes... int) []Duplicates {
 }
 
 func Test_FindDuplicates_two_duplicates(t*testing.T) {
-	duplicates := findDuplicates(0, 2)
+	duplicates := findDuplicates(t, 0, 2)
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
@@ -262,7 +262,7 @@ func Test_FindDuplicates_two_duplicates(t*testing.T) {
 }
 
 func Test_FindDuplicates_three_duplicates(t*testing.T) {
-	duplicates := findDuplicates(0, 3)
+	duplicates := findDuplicates(t, 0, 3)
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
@@ -272,21 +272,21 @@ func Test_FindDuplicates_three_duplicates(t*testing.T) {
 }
 
 func Test_FindDuplicates_two_different(t*testing.T) {
-	duplicates := findDuplicates(2)
+	duplicates := findDuplicates(t, 2)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
 }
 
 func Test_FindDuplicates_three_different(t*testing.T) {
-	duplicates := findDuplicates(3)
+	duplicates := findDuplicates(t, 3)
 	if len(duplicates) != 0 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 0)
 	}
 }
 
 func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
-	duplicates := findDuplicates(0, 2, 3)
+	duplicates := findDuplicates(t, 0, 2, 3)
 	if len(duplicates) != 2 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 2)
 	}
