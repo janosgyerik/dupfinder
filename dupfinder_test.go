@@ -8,162 +8,218 @@ import (
 	"strconv"
 	"github.com/janosgyerik/dupfinder/finder"
 	"path/filepath"
+	"errors"
 )
 
 const testdataBasedir = "testdata"
 
-func Test_CompareReaders_same_file(t*testing.T) {
+func Test_cmpResult(t*testing.T) {
+	err := errors.New("dummy")
+
+	cmpResultTests := []struct {
+		label            string
+		actual, expected cmpResult
+	}{
+		{
+			"done 1",
+			done(1),
+			cmpResult{cmp: 1, success: true, done: true},
+		},
+		{
+			"done -1",
+			done(-1),
+			cmpResult{cmp: -1, success: true, done: true},
+		},
+		{
+			"done 0",
+			done(0),
+			cmpResult{cmp: 0, success: true, done: true},
+		},
+		{
+			"undecided",
+			undecided(),
+			cmpResult{},
+		},
+		{
+			"errFirst",
+			errFirst(err),
+			cmpResult{errFirst: err, done: true},
+		},
+		{
+			"errSecond",
+			errSecond(err),
+			cmpResult{errSecond: err, done: true},
+		},
+	}
+	for _, tt := range cmpResultTests {
+		if tt.expected != tt.actual {
+			t.Errorf("got %#v for %s, expected %#v", tt.actual, tt.label, tt.expected)
+		}
+	}
+}
+
+func Test_compareReaders_same_file(t*testing.T) {
 	content := "dummy content"
 	reader1 := strings.NewReader(content)
 	reader2 := strings.NewReader(content)
 
 	expected := 0
 
-	cmp, err := CompareReaders(reader1, reader2)
-	if err != nil {
-		t.Errorf("Compare(f, f) raised error: %v", err)
+	r := compareReaders(reader1, reader2)
+	if !r.success {
+		t.Errorf("Compare(f, f) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(f, f) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(f, f) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareReaders_size_ascending(t*testing.T) {
+func Test_compareReaders_size_ascending(t*testing.T) {
 	smaller := strings.NewReader("dummy content")
 	bigger := strings.NewReader("longer dummy content")
 
 	expected := -1
 
-	cmp, err := CompareReaders(smaller, bigger)
-	if err != nil {
-		t.Errorf("Compare(smaller, bigger) raised error: %v", err)
+	r := compareReaders(smaller, bigger)
+	if !r.success {
+		t.Errorf("Compare(smaller, bigger) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(smaller, bigger) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(smaller, bigger) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareReaders_size_descending(t*testing.T) {
+func Test_compareReaders_size_descending(t*testing.T) {
 	smaller := strings.NewReader("dummy content")
 	bigger := strings.NewReader("longer dummy content")
 
 	expected := 1
 
-	cmp, err := CompareReaders(bigger, smaller)
-	if err != nil {
-		t.Errorf("Compare(bigger, smaller) raised error: %v", err)
+	r := compareReaders(bigger, smaller)
+	if !r.success {
+		t.Errorf("Compare(bigger, smaller) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(bigger, smaller) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(bigger, smaller) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareReaders_same_size_content_ascending(t*testing.T) {
+func Test_compareReaders_same_size_content_ascending(t*testing.T) {
 	lower := strings.NewReader("dummy content a")
 	higher := strings.NewReader("dummy content b")
 
 	expected := -1
 
-	cmp, err := CompareReaders(lower, higher)
-	if err != nil {
-		t.Errorf("Compare(lower, higher) raised error: %v", err)
+	r := compareReaders(lower, higher)
+	if !r.success {
+		t.Errorf("Compare(lower, higher) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(lower, higher) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(lower, higher) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareReaders_same_size_content_descending(t*testing.T) {
+func Test_compareReaders_same_size_content_descending(t*testing.T) {
 	lower := strings.NewReader("dummy content a")
 	higher := strings.NewReader("dummy content b")
 
 	expected := 1
 
-	cmp, err := CompareReaders(higher, lower)
-	if err != nil {
-		t.Errorf("Compare(higher, lower) raised error: %v", err)
+	r := compareReaders(higher, lower)
+	if !r.success {
+		t.Errorf("Compare(higher, lower) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(higher, lower) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(higher, lower) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
-	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+func newTempFile(t*testing.T, name string) *os.File {
+	file, err := ioutil.TempFile(os.TempDir(), name)
+
+	if err != nil {
+		t.Error("Failed to create temporary file")
+	}
+
+	return file
+}
+
+func Test_compareFiles_equal_if_both_same_empty_dummy(t*testing.T) {
+	file := newTempFile(t, "dummy")
 	defer os.Remove(file.Name())
 
 	expected := 0
 
-	cmp, err := CompareFiles(file.Name(), file.Name())
-	if err != nil {
-		t.Errorf("Compare(dummy, dummy) raised error: %v", err)
+	r := compareFiles(file.Name(), file.Name())
+	if !r.success {
+		t.Errorf("Compare(dummy, dummy) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(dummy, dummy) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(dummy, dummy) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareFiles_equal_if_both_empty_dummy(t*testing.T) {
-	dummy1, err := ioutil.TempFile(os.TempDir(), "dummy1")
+func Test_compareFiles_equal_if_both_empty_dummy(t*testing.T) {
+	dummy1 := newTempFile(t, "dummy1")
 	defer os.Remove(dummy1.Name())
 
-	dummy2, err := ioutil.TempFile(os.TempDir(), "dummy2")
+	dummy2 := newTempFile(t, "dummy2")
 	defer os.Remove(dummy2.Name())
 
 	expected := 0
 
-	cmp, err := CompareFiles(dummy1.Name(), dummy2.Name())
-	if err != nil {
-		t.Errorf("Compare(dummy1, dummy2) raised error: %v", err)
+	r := compareFiles(dummy1.Name(), dummy2.Name())
+	if !r.success {
+		t.Errorf("Compare(dummy1, dummy2) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(dummy1, dummy2) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(dummy1, dummy2) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareFiles_empty_comes_before_nonempty(t*testing.T) {
-	empty, err := ioutil.TempFile(os.TempDir(), "empty")
+func Test_compareFiles_empty_comes_before_nonempty(t*testing.T) {
+	empty := newTempFile(t, "empty")
 	defer os.Remove(empty.Name())
 
-	nonempty, err := ioutil.TempFile(os.TempDir(), "nonempty")
+	nonempty := newTempFile(t, "nonempty")
 	defer os.Remove(nonempty.Name())
 
 	nonempty.WriteString("something")
 
 	expected := -1
 
-	cmp, err := CompareFiles(empty.Name(), nonempty.Name())
-	if err != nil {
-		t.Errorf("Compare(empty, nonempty) raised error: %v", err)
+	r := compareFiles(empty.Name(), nonempty.Name())
+	if !r.success {
+		t.Errorf("Compare(empty, nonempty) failed: %v", r)
 	}
-	if cmp != expected {
-		t.Errorf("Compare(empty, nonempty) == %v, want %v", cmp, expected)
+	if r.cmp != expected {
+		t.Errorf("Compare(empty, nonempty) == %v, want %v", r.cmp, expected)
 	}
 }
 
-func Test_CompareFiles_fails_if_both_nonexistent(t*testing.T) {
-	_, err := CompareFiles("/nonexistent1", "/nonexistent2")
-	if err == nil {
+func Test_compareFiles_fails_if_both_nonexistent(t*testing.T) {
+	r := compareFiles("/nonexistent1", "/nonexistent2")
+	if r.errFirst == nil {
 		t.Error("Compare(nonexistent1, nonexistent2) should have raised error")
 	}
 }
 
-func Test_CompareFiles_fails_if_first_nonexistent(t*testing.T) {
-	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+func Test_compareFiles_fails_if_first_nonexistent(t*testing.T) {
+	file := newTempFile(t, "dummy")
 	defer os.Remove(file.Name())
 
-	_, err = CompareFiles("/nonexistent", file.Name())
-	if err == nil {
+	r := compareFiles("/nonexistent", file.Name())
+	if r.success || r.errFirst == nil || r.errSecond != nil || !r.done {
 		t.Error("Compare(nonexistent, dummy) should have raised error")
 	}
 }
 
-func Test_CompareFiles_fails_if_second_nonexistent(t*testing.T) {
-	file, err := ioutil.TempFile(os.TempDir(), "dummy")
+func Test_compareFiles_fails_if_second_nonexistent(t*testing.T) {
+	file := newTempFile(t, "dummy")
 	defer os.Remove(file.Name())
 
-	_, err = CompareFiles(file.Name(), "/nonexistent")
-	if err == nil {
+	r := compareFiles(file.Name(), "/nonexistent")
+	if r.success || r.errFirst != nil || r.errSecond == nil || !r.done {
 		t.Error("Compare(dummy, nonexistent) should have raised error")
 	}
 }
@@ -242,7 +298,7 @@ func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
 	}
 }
 
-func Test_DupTracker_merge_pools(t*testing.T) {
+func Test_dupTracker_merge_pools(t*testing.T) {
 	tracker := newDupTracker()
 	tracker.add("path1-1", "path1-2")
 	tracker.add("path1-3", "path1-2")

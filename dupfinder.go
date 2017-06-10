@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"sort"
+	"fmt"
 )
 
 const chunkSize = 64000
@@ -26,48 +27,87 @@ func chunker(r io.Reader, ch chan <- []byte) {
 	}
 }
 
-// TODO improve error handling: files with I/O errors should not be compared to anything, add to black list
+type cmpResult struct {
+	cmp       int
+	errFirst  error
+	errSecond error
+	done      bool
+	success   bool
+}
 
-// TODO no need to expose publicly
-func CompareFiles(path1, path2 string) (int, error) {
-	// TODO extract to method: compare by size
+func done(cmp int) cmpResult {
+	return cmpResult{cmp: cmp, done: true, success: true}
+}
+
+func undecided() cmpResult {
+	return cmpResult{}
+}
+
+func errFirst(err error) cmpResult {
+	return cmpResult{errFirst: err, done: true}
+}
+
+func errSecond(err error) cmpResult {
+	return cmpResult{errSecond: err, done: true}
+}
+
+func compare(a, b int64) int {
+	if a < b {
+		return -1
+	}
+	if b < a {
+		return 1
+	}
+	return 0
+}
+
+func compareFilesBySize(path1, path2 string) cmpResult {
 	st1, err := os.Stat(path1)
 	if err != nil {
-		return 0, err
+		return errFirst(err)
 	}
 
 	st2, err := os.Stat(path2)
 	if err != nil {
-		return 0, err
+		return errSecond(err)
 	}
 
-	if st1.Size() < st2.Size() {
-		return -1, nil
-	}
-	if st1.Size() > st2.Size() {
-		return 1, nil
+	cmp := compare(st1.Size(), st2.Size())
+	if cmp != 0 {
+		return done(cmp)
 	}
 
-	// TODO extract to method: compare by content
+	return undecided()
+}
+
+func compareFilesByContent(path1, path2 string) cmpResult {
 	fd1, err := os.Open(path1)
 	defer fd1.Close()
 	if err != nil {
-		return 0, err
+		return errFirst(err)
 	}
 
 	fd2, err := os.Open(path2)
 	defer fd2.Close()
 	if err != nil {
-		return 0, err
+		return errSecond(err)
 	}
 
-	return CompareReaders(fd1, fd2)
+	return compareReaders(fd1, fd2)
 }
 
-// TODO no need to expose publicly
+func compareFiles(path1, path2 string) cmpResult {
+	r := compareFilesBySize(path1, path2)
+	if r.done {
+		return r
+	}
+
+	return compareFilesByContent(path1, path2)
+}
+
 // TODO compare performance of serial and parallel chunkers
 // TODO find on internet techniques to process files in parallel correctly
-func CompareReaders(fd1, fd2 io.Reader) (int, error) {
+func compareReaders(fd1, fd2 io.Reader) cmpResult {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)
 
@@ -80,11 +120,11 @@ func CompareReaders(fd1, fd2 io.Reader) (int, error) {
 
 		cmp := bytes.Compare(buf1, buf2)
 		if cmp != 0 {
-			return cmp, nil
+			return done(cmp)
 		}
 
 		if len(buf1) == 0 {
-			return 0, nil
+			return done(cmp)
 		}
 	}
 }
@@ -120,11 +160,12 @@ func keys(m map[string]bool) []string {
 }
 
 type dupTracker struct {
-	pools map[string]Duplicates
+	pools    map[string]Duplicates
+	failures []error
 }
 
 func newDupTracker() dupTracker {
-	return dupTracker{make(map[string]Duplicates)}
+	return dupTracker{make(map[string]Duplicates), []error{}}
 }
 
 func (tracker dupTracker) add(path1, path2 string) {
@@ -158,6 +199,10 @@ func (tracker dupTracker) mergePools(path1, path2 string) {
 
 func (tracker dupTracker) getPool(path string) Duplicates {
 	return tracker.pools[path]
+}
+
+func (tracker *dupTracker) err(path string, err error) {
+	tracker.failures = append(tracker.failures, err)
 }
 
 // methods to sort Duplicates by item count
@@ -211,21 +256,29 @@ func merge(tracker dupTracker, paths []string, low, mid, high int) {
 	for i, j = low, mid; i < mid && j < high; {
 		p1 := paths[i]
 		p2 := paths[j]
-		cmp, err := CompareFiles(p1, p2)
-		if err != nil {
-			panic(err)
-		}
-		if cmp == 0 {
-			tracker.add(p1, p2)
-			work = append(work, p1, p2)
+		r := compareFiles(p1, p2)
+		if r.success {
+			cmp := r.cmp
+			if cmp == 0 {
+				tracker.add(p1, p2)
+				work = append(work, p1, p2)
+				i++
+				j++
+			} else if cmp < 0 {
+				work = append(work, p1)
+				i++
+			} else {
+				work = append(work, p2)
+				j++
+			}
+		} else if r.errFirst != nil {
+			tracker.err(paths[i], r.errFirst)
 			i++
+		} else if r.errSecond != nil {
+			tracker.err(paths[j], r.errSecond)
 			j++
-		} else if cmp < 0 {
-			work = append(work, p1)
-			i++
 		} else {
-			work = append(work, p2)
-			j++
+			panic(fmt.Sprintf("illegal state for cmpResult: %#v", r))
 		}
 	}
 
