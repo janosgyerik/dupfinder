@@ -298,17 +298,20 @@ func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
 	}
 }
 
-func Test_dupTracker_merge_pools(t*testing.T) {
+func Test_dupTracker_add_and_merge(t*testing.T) {
 	tracker := newDupTracker()
 	tracker.add("path1-1", "path1-2")
-	tracker.add("path1-3", "path1-2")
+	tracker.add("path1-2", "path1-3")
+	tracker.add("path2-1", "path2-2")
+	tracker.add("path2-3", "path2-2")
+	tracker.add("path1-1", "path2-2")
 
 	duplicates := tracker.getDuplicates()
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
-	if duplicates[0].count() != 3 {
-		t.Errorf("Found %d duplicate files, expected %d", duplicates[0].count(), 3)
+	if duplicates[0].count() != 6 {
+		t.Errorf("Found %d duplicate files, expected %d", duplicates[0].count(), 6)
 	}
 }
 
