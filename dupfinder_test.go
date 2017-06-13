@@ -322,6 +322,28 @@ func Test_FindDuplicates_second_file_nonexistent(t*testing.T) {
 	}
 }
 
+func Test_FindDuplicates_unreadable_files(t*testing.T) {
+	file := newTempFile(t, "dummy")
+	defer os.Remove(file.Name())
+
+	unreadable := newTempFile(t, "unreadable")
+	defer os.Remove(unreadable.Name())
+
+	os.Chmod(unreadable.Name(), 0)
+
+	duplicates := FindDuplicates([]string{unreadable.Name(), file.Name()})
+
+	if len(duplicates) != 0 {
+		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
+	}
+
+	duplicates = FindDuplicates([]string{file.Name(), unreadable.Name()})
+
+	if len(duplicates) != 0 {
+		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
+	}
+}
+
 func Test_dupTracker_add_and_merge(t*testing.T) {
 	tracker := newDupTracker()
 	tracker.add("path1-1", "path1-2")
