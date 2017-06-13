@@ -230,7 +230,7 @@ func Test_compareFiles_fails_if_second_nonexistent(t*testing.T) {
 	}
 }
 
-func findDuplicates(t*testing.T, distinctCount int, groupSizes... int) []Duplicates {
+func findDuplicates(t*testing.T, distinctCount int, groupSizes... int) []DupGroup {
 	paths := make([]string, 0)
 
 	for i := 0; i < distinctCount; i++ {
@@ -248,7 +248,7 @@ func findDuplicates(t*testing.T, distinctCount int, groupSizes... int) []Duplica
 		}
 	}
 
-	return FindDuplicates(paths)
+	return FindDuplicates(paths).Groups
 }
 
 func Test_FindDuplicates_two_duplicates(t*testing.T) {
@@ -303,14 +303,14 @@ func Test_FindDuplicates_nonexistent_files(t*testing.T) {
 	defer os.Remove(file.Name())
 
 	paths := []string{"/nonexistent", file.Name()}
-	duplicates := FindDuplicates(paths)
+	duplicates := FindDuplicates(paths).Groups
 
 	if len(duplicates) != 0 {
 		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
 	}
 
 	paths = []string{file.Name(), "/nonexistent"}
-	duplicates = FindDuplicates(paths)
+	duplicates = FindDuplicates(paths).Groups
 
 	if len(duplicates) != 0 {
 		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
@@ -326,13 +326,13 @@ func Test_FindDuplicates_unreadable_files(t*testing.T) {
 
 	os.Chmod(unreadable.Name(), 0)
 
-	duplicates := FindDuplicates([]string{unreadable.Name(), file.Name()})
+	duplicates := FindDuplicates([]string{unreadable.Name(), file.Name()}).Groups
 
 	if len(duplicates) != 0 {
 		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
 	}
 
-	duplicates = FindDuplicates([]string{file.Name(), unreadable.Name()})
+	duplicates = FindDuplicates([]string{file.Name(), unreadable.Name()}).Groups
 
 	if len(duplicates) != 0 {
 		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
@@ -347,7 +347,7 @@ func Test_dupTracker_add_and_merge(t*testing.T) {
 	tracker.add("path2-3", "path2-2")
 	tracker.add("path1-1", "path2-2")
 
-	duplicates := tracker.getDuplicates()
+	duplicates := tracker.getDupGroups()
 	if len(duplicates) != 1 {
 		t.Errorf("Found %d duplicate groups, expected %d", len(duplicates), 1)
 	}
@@ -361,7 +361,7 @@ func findPaths(basename string) []string {
 }
 
 func Test_nodups(t*testing.T) {
-	duplicates := FindDuplicates(findPaths("nodups"))
+	duplicates := FindDuplicates(findPaths("nodups")).Groups
 
 	if len(duplicates) > 0 {
 		t.Fatal("found duplicates in different files:", duplicates)
@@ -369,7 +369,7 @@ func Test_nodups(t*testing.T) {
 }
 
 func Test_samesize(t*testing.T) {
-	duplicates := FindDuplicates(findPaths("samesize"))
+	duplicates := FindDuplicates(findPaths("samesize")).Groups
 
 	if len(duplicates) > 0 {
 		t.Fatal("found duplicates in different files with same size:", duplicates)
@@ -377,7 +377,7 @@ func Test_samesize(t*testing.T) {
 }
 
 func Test_alldups(t*testing.T) {
-	duplicates := FindDuplicates(findPaths("alldups"))
+	duplicates := FindDuplicates(findPaths("alldups")).Groups
 
 	if len(duplicates) != 1 {
 		t.Fatalf("got %d duplicate groups, expected 1", len(duplicates))

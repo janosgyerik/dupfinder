@@ -11,6 +11,8 @@
 
 ### polishing
 
+- get the pools more directly in dupTracker.getDupGroups,
+  without the ugly delete
 - cleanup all TODOs
 - 100% test coverage
 - add size scale shortcut for -minSize

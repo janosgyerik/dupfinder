@@ -6,6 +6,7 @@ import (
 	"io"
 	"sort"
 	"fmt"
+	"strings"
 )
 
 const chunkSize = 64000
@@ -129,24 +130,24 @@ func compareReaders(fd1, fd2 io.Reader) cmpResult {
 	}
 }
 
-type Duplicates struct {
+type DupGroup struct {
 	paths map[string]bool
 }
 
-func newDuplicates() Duplicates {
-	return Duplicates{make(map[string]bool)}
+func newDupGroup() DupGroup {
+	return DupGroup{make(map[string]bool)}
 }
 
-func (duplicates Duplicates) add(path string) {
-	duplicates.paths[path] = true
+func (gr DupGroup) add(path string) {
+	gr.paths[path] = true
 }
 
-func (duplicates Duplicates) count() int {
-	return len(duplicates.paths)
+func (gr DupGroup) count() int {
+	return len(gr.paths)
 }
 
-func (duplicates Duplicates) GetPaths() []string {
-	paths := keys(duplicates.paths)
+func (gr DupGroup) GetPaths() []string {
+	paths := keys(gr.paths)
 	sort.Strings(paths)
 	return paths
 }
@@ -160,12 +161,12 @@ func keys(m map[string]bool) []string {
 }
 
 type dupTracker struct {
-	pools    map[string]Duplicates
-	failures []error
+	pools    map[string]DupGroup
+	failures []Failure
 }
 
 func newDupTracker() dupTracker {
-	return dupTracker{make(map[string]Duplicates), []error{}}
+	return dupTracker{make(map[string]DupGroup), make([]Failure, 0)}
 }
 
 func (tracker dupTracker) add(path1, path2 string) {
@@ -179,13 +180,13 @@ func (tracker dupTracker) add(path1, path2 string) {
 	} else if ok2 {
 		tracker.addToPool(path1, pool2)
 	} else {
-		pool := newDuplicates()
+		pool := newDupGroup()
 		tracker.addToPool(path1, pool)
 		tracker.addToPool(path2, pool)
 	}
 }
 
-func (tracker dupTracker) addToPool(path string, pool Duplicates) {
+func (tracker dupTracker) addToPool(path string, pool DupGroup) {
 	pool.add(path)
 	tracker.pools[path] = pool
 }
@@ -197,16 +198,16 @@ func (tracker dupTracker) mergePools(path1, path2 string) {
 	}
 }
 
-func (tracker dupTracker) getPool(path string) Duplicates {
+func (tracker dupTracker) getPool(path string) DupGroup {
 	return tracker.pools[path]
 }
 
 func (tracker *dupTracker) err(path string, err error) {
-	tracker.failures = append(tracker.failures, err)
+	tracker.failures = append(tracker.failures, Failure{path, err})
 }
 
 // methods to sort Duplicates by item count
-type duplicatesList []Duplicates
+type duplicatesList []DupGroup
 
 func (p duplicatesList) Len() int {
 	return len(p)
@@ -218,11 +219,11 @@ func (p duplicatesList) Swap(i, j int) {
 	p[i], p[j] = p[j], p[i]
 }
 
-func (tracker dupTracker) getDuplicates() []Duplicates {
-	duplicates := make([]Duplicates, 0)
-	for _, dups := range tracker.pools {
-		duplicates = append(duplicates, dups)
-		for _, path := range dups.GetPaths() {
+func (tracker dupTracker) getDupGroups() []DupGroup {
+	duplicates := make([]DupGroup, 0)
+	for _, pool := range tracker.pools {
+		duplicates = append(duplicates, pool)
+		for _, path := range pool.GetPaths() {
 			delete(tracker.pools, path)
 		}
 	}
@@ -230,12 +231,43 @@ func (tracker dupTracker) getDuplicates() []Duplicates {
 	return duplicates
 }
 
-func FindDuplicates(paths []string) []Duplicates {
+type failuresList []Failure
+
+func (p failuresList) Len() int {
+	return len(p)
+}
+func (p failuresList) Less(i, j int) bool {
+	return strings.Compare(p[i].Path, p[j].Path) < 0
+}
+func (p failuresList) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+func (tracker dupTracker) getFailures() []Failure {
+	failures := append(make([]Failure, 0), tracker.failures...)
+	sort.Sort(failuresList(failures))
+	return failures
+}
+
+type Failure struct {
+	Path  string
+	Error error
+}
+
+type Result struct {
+	Groups   []DupGroup
+	Failures []Failure
+}
+
+func FindDuplicates(paths []string) Result {
 	tracker := newDupTracker()
 
 	mergesort(tracker, paths, 0, len(paths))
 
-	return tracker.getDuplicates()
+	return Result{
+		Groups: tracker.getDupGroups(),
+		Failures: tracker.getFailures(),
+	}
 }
 
 func mergesort(tracker dupTracker, paths []string, low, high int) {
