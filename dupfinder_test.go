@@ -298,6 +298,30 @@ func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
 	}
 }
 
+func Test_FindDuplicates_first_file_nonexistent(t*testing.T) {
+	file := newTempFile(t, "dummy")
+	defer os.Remove(file.Name())
+
+	paths := []string{"/nonexistent", file.Name()}
+	duplicates := FindDuplicates(paths)
+
+	if len(duplicates) != 0 {
+		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
+	}
+}
+
+func Test_FindDuplicates_second_file_nonexistent(t*testing.T) {
+	file := newTempFile(t, "dummy")
+	defer os.Remove(file.Name())
+
+	paths := []string{file.Name(), "/nonexistent"}
+	duplicates := FindDuplicates(paths)
+
+	if len(duplicates) != 0 {
+		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
+	}
+}
+
 func Test_dupTracker_add_and_merge(t*testing.T) {
 	tracker := newDupTracker()
 	tracker.add("path1-1", "path1-2")

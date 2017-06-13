@@ -271,14 +271,17 @@ func merge(tracker dupTracker, paths []string, low, mid, high int) {
 				work = append(work, p2)
 				j++
 			}
-		} else if r.errFirst != nil {
-			tracker.err(paths[i], r.errFirst)
-			i++
-		} else if r.errSecond != nil {
-			tracker.err(paths[j], r.errSecond)
-			j++
 		} else {
-			panic(fmt.Sprintf("illegal state for cmpResult: %#v", r))
+			work = append(work, "")
+			if r.errFirst != nil {
+				tracker.err(paths[i], r.errFirst)
+				i++
+			} else if r.errSecond != nil {
+				tracker.err(paths[j], r.errSecond)
+				j++
+			} else {
+				panic(fmt.Sprintf("illegal state for cmpResult: %#v", r))
+			}
 		}
 	}
 
