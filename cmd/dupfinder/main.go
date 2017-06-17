@@ -66,14 +66,24 @@ func isFileOrDir(s string) bool {
 func main() {
 	params := parseArgs()
 
-	finder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
+	filefinder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
 
 	paths := []string{}
 	for _, path := range params.paths {
-		paths = append(paths, finder.FindAll(path)...)
+		paths = append(paths, filefinder.FindAll(path)...)
 	}
 
-	for _, dup := range dupfinder.FindDuplicates(paths) {
+	result := dupfinder.FindDuplicates(paths)
+
+	if len(result.Failures) > 0 {
+		fmt.Println("# I/O errors in files:")
+		for _, failure := range result.Failures {
+			fmt.Printf("# %s\n", failure.Path)
+		}
+		fmt.Println()
+	}
+
+	for _, dup := range result.Groups {
 		for _, path := range dup.GetPaths() {
 			fmt.Println(path)
 		}

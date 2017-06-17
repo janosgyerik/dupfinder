@@ -298,23 +298,30 @@ func Test_FindDuplicates_two_duplicate_groups(t*testing.T) {
 	}
 }
 
+func verifyFailure(t*testing.T, paths []string, failurePath string) {
+	result := FindDuplicates(paths)
+
+	if len(result.Groups) != 0 {
+		t.Errorf("Got %d duplicate groups, expected none", len(result.Groups))
+	}
+
+	if len(result.Failures) != 1 {
+		t.Errorf("Got %d failures, expected 1", len(result.Failures))
+	}
+
+	if actual := result.Failures[0].Path; actual != failurePath {
+		t.Errorf("Got %s, expected %s as failed path", actual, failurePath)
+	}
+}
+
 func Test_FindDuplicates_nonexistent_files(t*testing.T) {
 	file := newTempFile(t, "dummy")
 	defer os.Remove(file.Name())
 
-	paths := []string{"/nonexistent", file.Name()}
-	duplicates := FindDuplicates(paths).Groups
+	failurePath := "/nonexistent"
 
-	if len(duplicates) != 0 {
-		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
-	}
-
-	paths = []string{file.Name(), "/nonexistent"}
-	duplicates = FindDuplicates(paths).Groups
-
-	if len(duplicates) != 0 {
-		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
-	}
+	verifyFailure(t, []string{failurePath, file.Name()}, failurePath)
+	verifyFailure(t, []string{file.Name(), failurePath}, failurePath)
 }
 
 func Test_FindDuplicates_unreadable_files(t*testing.T) {
@@ -326,17 +333,10 @@ func Test_FindDuplicates_unreadable_files(t*testing.T) {
 
 	os.Chmod(unreadable.Name(), 0)
 
-	duplicates := FindDuplicates([]string{unreadable.Name(), file.Name()}).Groups
+	failurePath := unreadable.Name()
 
-	if len(duplicates) != 0 {
-		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
-	}
-
-	duplicates = FindDuplicates([]string{file.Name(), unreadable.Name()}).Groups
-
-	if len(duplicates) != 0 {
-		t.Errorf("Got %d duplicate groups, expected none", len(duplicates))
-	}
+	verifyFailure(t, []string{failurePath, file.Name()}, failurePath)
+	verifyFailure(t, []string{file.Name(), failurePath}, failurePath)
 }
 
 func Test_dupTracker_add_and_merge(t*testing.T) {

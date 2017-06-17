@@ -165,8 +165,8 @@ type dupTracker struct {
 	failures []Failure
 }
 
-func newDupTracker() dupTracker {
-	return dupTracker{make(map[string]DupGroup), make([]Failure, 0)}
+func newDupTracker() *dupTracker {
+	return &dupTracker{make(map[string]DupGroup), make([]Failure, 0)}
 }
 
 func (tracker dupTracker) add(path1, path2 string) {
@@ -270,7 +270,7 @@ func FindDuplicates(paths []string) Result {
 	}
 }
 
-func mergesort(tracker dupTracker, paths []string, low, high int) {
+func mergesort(tracker *dupTracker, paths []string, low, high int) {
 	if low + 1 >= high {
 		return
 	}
@@ -281,7 +281,7 @@ func mergesort(tracker dupTracker, paths []string, low, high int) {
 	merge(tracker, paths, low, mid, high)
 }
 
-func merge(tracker dupTracker, paths []string, low, mid, high int) {
+func merge(tracker *dupTracker, paths []string, low, mid, high int) {
 	work := make([]string, 0, high - low)
 
 	var i, j int

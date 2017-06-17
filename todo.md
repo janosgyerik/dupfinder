@@ -1,7 +1,5 @@
 ### blockers
 
-- print files that were ignored due to errors
-  - unit tests
 - fix the bug when processing ~/Pictures
 
 ### stress test
