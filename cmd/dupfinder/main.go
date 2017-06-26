@@ -20,7 +20,7 @@ type Params struct {
 }
 
 func parseArgs() Params {
-	minSizePtr := flag.Int64("minSize", 0, "minimum file size")
+	minSizePtr := flag.Int64("minSize", 1, "minimum file size")
 
 	flag.Parse()
 

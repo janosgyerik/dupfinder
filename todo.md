@@ -1,7 +1,3 @@
-### blockers
-
-- verify the output matches Java impl for ~/Pictures
-
 ### stress test
 
 - compare speed against java implementation
