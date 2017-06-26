@@ -1,6 +1,5 @@
 ### blockers
 
-- do not follow symlinks
 - verify the output matches Java impl for ~/Pictures
 
 ### stress test

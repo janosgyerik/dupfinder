@@ -106,8 +106,6 @@ func compareFiles(path1, path2 string) cmpResult {
 	return compareFilesByContent(path1, path2)
 }
 
-// TODO compare performance of serial and parallel chunkers
-// TODO find on internet techniques to process files in parallel correctly
 func compareReaders(fd1, fd2 io.Reader) cmpResult {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)

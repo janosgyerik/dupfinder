@@ -40,7 +40,7 @@ func (finder defaultFinder) Find(basedir string) <-chan string {
 				return nil
 			}
 		}
-		if !info.IsDir() {
+		if info.Mode().IsRegular() {
 			paths <- path
 		}
 		return nil
