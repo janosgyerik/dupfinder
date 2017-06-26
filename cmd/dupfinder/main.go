@@ -15,24 +15,26 @@ func exit() {
 }
 
 type Params struct {
-	paths    []string
-	minSize  int64
+	paths   []string
+	minSize int64
+	stdin   bool
 }
 
 func parseArgs() Params {
 	minSizePtr := flag.Int64("minSize", 1, "minimum file size")
+	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 
 	flag.Parse()
 
 	paths := make([]string, 0)
-	if len(flag.Args()) > 0 {
+	if *stdinPtr {
+		paths = readFilePathsFromStdin()
+	} else if len(flag.Args()) > 0 {
 		for _, arg := range flag.Args() {
 			if isFileOrDir(arg) {
 				paths = append(paths, arg)
 			}
 		}
-	} else {
-		paths = readFilePathsFromStdin()
 	}
 
 	if len(paths) == 0 {

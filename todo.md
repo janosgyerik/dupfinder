@@ -10,7 +10,6 @@
 - cleanup all TODOs
 - 100% test coverage
 - add size scale shortcut for -minSize
-- add -stdin flag to read path list from stdin
 - add -0 flag to read null-delimited path list from stdin
 - document public types and functions
 - publish documentation
