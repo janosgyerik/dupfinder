@@ -11,9 +11,9 @@ import (
 
 const chunkSize = 64000
 
-func chunker(r io.Reader, ch chan <- []byte) {
+func chunker(r io.Reader, ch chan <- []byte, ready chan bool) {
 	buf := make([]byte, chunkSize)
-	for {
+	for <- ready {
 		n, err := r.Read(buf)
 
 		if err != nil {
@@ -112,10 +112,19 @@ func compareReaders(fd1, fd2 io.Reader) cmpResult {
 	ch1 := make(chan []byte)
 	ch2 := make(chan []byte)
 
-	go chunker(fd1, ch1)
-	go chunker(fd2, ch2)
+	ready1 := make(chan bool)
+	defer close(ready1)
+
+	ready2 := make(chan bool)
+	defer close(ready2)
+
+	go chunker(fd1, ch1, ready1)
+	go chunker(fd2, ch2, ready2)
 
 	for {
+		ready1 <- true
+		ready2 <- true
+
 		buf1 := <-ch1
 		buf2 := <-ch2
 
