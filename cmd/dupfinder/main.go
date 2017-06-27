@@ -30,9 +30,9 @@ func parseArgs() Params {
 
 	var paths []string
 	if *zeroPtr {
-		paths = pathreader.ReadPathsFromLines(os.Stdin)
-	} else if *stdinPtr {
 		paths = pathreader.ReadPathsFromNullDelimited(os.Stdin)
+	} else if *stdinPtr {
+		paths = pathreader.ReadPathsFromLines(os.Stdin)
 	} else {
 		paths = pathreader.FilterPaths(flag.Args())
 	}
