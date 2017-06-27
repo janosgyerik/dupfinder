@@ -13,36 +13,42 @@ func scanNullDelimited(data []byte, atEOF bool) (advance int, token []byte, err 
 	}
 	if i := bytes.IndexByte(data, 0); i >= 0 {
 		// We have a full null-terminated line.
-		return i + 1, dropNull(data[0:i]), nil
+		return i + 1, data[0:i], nil
 	}
 	// If we're at EOF, we have a final, non-terminated line. Return it.
 	if atEOF {
-		return len(data), dropNull(data), nil
+		return len(data), data, nil
 	}
 	// Request more data.
 	return 0, nil, nil
 }
 
-// dropNull drops a terminal \0 from the data.
-func dropNull(data []byte) []byte {
-	if len(data) > 0 && data[len(data)-1] == 0 {
-		return data[0 : len(data)-1]
-	}
-	return data
-}
+type filter func(string) bool
 
-func readFilePaths(reader io.Reader, splitter bufio.SplitFunc) []string {
-	paths := make([]string, 0)
+func readItems(reader io.Reader, splitter bufio.SplitFunc, filter filter) []string {
+	items := make([]string, 0)
 
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(splitter)
 	for scanner.Scan() {
-		if path := scanner.Text(); isFileOrDir(path) {
-			paths = append(paths, path)
+		if item := scanner.Text(); filter(item) {
+			items = append(items, item)
 		}
 	}
 
-	return paths
+	return items
+}
+
+func readItemsFromLines(reader io.Reader, filter filter) []string {
+	return readItems(reader, bufio.ScanLines, filter)
+}
+
+func readItemsFromNullDelimited(reader io.Reader, filter filter) []string {
+	return readItems(reader, scanNullDelimited, filter)
+}
+
+func readFilePaths(reader io.Reader, splitter bufio.SplitFunc) []string {
+	return readItems(reader, splitter, isFileOrDir)
 }
 
 func isFileOrDir(s string) bool {
@@ -51,11 +57,11 @@ func isFileOrDir(s string) bool {
 }
 
 func ReadPathsFromLines(reader io.Reader) []string {
-	return readFilePaths(reader, scanNullDelimited)
+	return readFilePaths(reader, bufio.ScanLines)
 }
 
 func ReadPathsFromNullDelimited(reader io.Reader) []string {
-	return readFilePaths(reader, bufio.ScanLines)
+	return readFilePaths(reader, scanNullDelimited)
 }
 
 func FilterPaths(args []string) []string {
