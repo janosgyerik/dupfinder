@@ -19,7 +19,7 @@ func Test_readItems(t*testing.T) {
 		{"line 1", []string{"line 1"}},
 		{"line 1\nline 2", []string{"line 1", "line 2"}},
 		{"line 1\nline 2\n", []string{"line 1", "line 2"}},
-		{"line 1\n\nline 2\n", []string{"line 1", "", "line 2"}},
+		{"line 1\n\nline 2\n", []string{"line 1", ".", "line 2"}},
 	}
 
 	for _, item := range data {
@@ -46,6 +46,7 @@ func Test_ReadPaths(t*testing.T) {
 		{".\nnonexistent", []string{"."}},
 		{".\n.", []string{"."}},
 		{".\n.\n/", []string{".", "/"}},
+		{".\n./\n/\n//", []string{".", "/"}},
 		{".\n\n.\n.\n/\n/", []string{".", "/"}},
 	}
 
@@ -73,6 +74,8 @@ func Test_FilterPaths(t*testing.T) {
 		{".\nnonexistent", []string{"."}},
 		{".\n.", []string{"."}},
 		{".\n.\n/", []string{".", "/"}},
+		{".\n/\n//", []string{".", "/"}},
+		{".\n//\n/", []string{".", "/"}},
 		{".\n\n.\n.\n/\n/", []string{".", "/"}},
 	}
 

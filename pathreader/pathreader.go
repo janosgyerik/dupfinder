@@ -5,6 +5,7 @@ import (
 	"io"
 	"bufio"
 	"os"
+	"path/filepath"
 )
 
 func scanNullDelimited(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -29,8 +30,9 @@ func newUniqueFilter() filter {
 	seen := make(map[string]bool)
 
 	return func(s string) bool {
-		if _, ok := seen[s]; !ok {
-			seen[s] = true
+		normalized := filepath.Clean(s)
+		if _, ok := seen[normalized]; !ok {
+			seen[normalized] = true
 			return true
 		}
 		return false
@@ -57,7 +59,7 @@ func readItems(reader io.Reader, splitter bufio.SplitFunc, filter filter) []stri
 	scanner.Split(splitter)
 	for scanner.Scan() {
 		if item := scanner.Text(); filter(item) {
-			items = append(items, item)
+			items = append(items, normalize(item))
 		}
 	}
 
@@ -84,13 +86,17 @@ func ReadPathsFromNullDelimited(reader io.Reader) []string {
 	return readFilePaths(reader, scanNullDelimited)
 }
 
+func normalize(path string) string {
+	return filepath.Clean(path)
+}
+
 func FilterPaths(args []string) []string {
 	filter := newDefaultFilter()
 
 	paths := make([]string, 0)
 	for _, arg := range args {
 		if filter(arg) {
-			paths = append(paths, arg)
+			paths = append(paths, normalize(arg))
 		}
 	}
 	return paths
