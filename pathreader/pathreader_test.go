@@ -44,8 +44,9 @@ func Test_ReadPaths(t*testing.T) {
 	}{
 		{"", []string{}},
 		{".\nnonexistent", []string{"."}},
-		{".\n.", []string{".", "."}},
-		{".\n\n.\n.\n", []string{".", ".", "."}},
+		{".\n.", []string{"."}},
+		{".\n.\n/", []string{".", "/"}},
+		{".\n\n.\n.\n/\n/", []string{".", "/"}},
 	}
 
 	for _, item := range data {
@@ -70,8 +71,9 @@ func Test_FilterPaths(t*testing.T) {
 	}{
 		{"", []string{}},
 		{".\nnonexistent", []string{"."}},
-		{".\n.", []string{".", "."}},
-		{".\n\n.\n.\n", []string{".", ".", "."}},
+		{".\n.", []string{"."}},
+		{".\n.\n/", []string{".", "/"}},
+		{".\n\n.\n.\n/\n/", []string{".", "/"}},
 	}
 
 	for _, item := range data {

@@ -25,6 +25,31 @@ func scanNullDelimited(data []byte, atEOF bool) (advance int, token []byte, err 
 
 type filter func(string) bool
 
+func newUniqueFilter() filter {
+	seen := make(map[string]bool)
+
+	return func(s string) bool {
+		if _, ok := seen[s]; !ok {
+			seen[s] = true
+			return true
+		}
+		return false
+	}
+}
+
+func isFileOrDir(s string) bool {
+	_, err := os.Stat(s)
+	return err == nil
+}
+
+func newDefaultFilter() filter {
+	isUnique := newUniqueFilter()
+
+	return func(s string) bool {
+		return isFileOrDir(s) && isUnique(s)
+	}
+}
+
 func readItems(reader io.Reader, splitter bufio.SplitFunc, filter filter) []string {
 	items := make([]string, 0)
 
@@ -48,12 +73,7 @@ func readItemsFromNullDelimited(reader io.Reader, filter filter) []string {
 }
 
 func readFilePaths(reader io.Reader, splitter bufio.SplitFunc) []string {
-	return readItems(reader, splitter, isFileOrDir)
-}
-
-func isFileOrDir(s string) bool {
-	_, err := os.Stat(s)
-	return err == nil
+	return readItems(reader, splitter, newDefaultFilter())
 }
 
 func ReadPathsFromLines(reader io.Reader) []string {
@@ -65,9 +85,11 @@ func ReadPathsFromNullDelimited(reader io.Reader) []string {
 }
 
 func FilterPaths(args []string) []string {
+	filter := newDefaultFilter()
+
 	paths := make([]string, 0)
 	for _, arg := range args {
-		if isFileOrDir(arg) {
+		if filter(arg) {
 			paths = append(paths, arg)
 		}
 	}

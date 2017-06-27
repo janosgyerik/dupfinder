@@ -5,7 +5,6 @@
 
 ### polishing
 
-- avoid duplicate paths: dupfinder tmp tmp gives very strange results
 - normalize paths in finder, otherwise dupfinder tmp tmp/ will have not real dups
 - get the pools more directly in dupTracker.getDupGroups,
   without the ugly delete
