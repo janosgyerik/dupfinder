@@ -39,16 +39,19 @@ func newUniqueFilter() filter {
 	}
 }
 
-func isFileOrDir(s string) bool {
-	_, err := os.Stat(s)
-	return err == nil
+func isFile(s string) bool {
+	fi, err := os.Stat(s)
+	if err != nil {
+		return false
+	}
+	return fi.Mode().IsRegular()
 }
 
 func newDefaultFilter() filter {
 	isUnique := newUniqueFilter()
 
 	return func(s string) bool {
-		return isFileOrDir(s) && isUnique(s)
+		return isFile(s) && isUnique(s)
 	}
 }
 
@@ -78,11 +81,11 @@ func readFilePaths(reader io.Reader, splitter bufio.SplitFunc) []string {
 	return readItems(reader, splitter, newDefaultFilter())
 }
 
-func ReadPathsFromLines(reader io.Reader) []string {
+func ReadFilePathsFromLines(reader io.Reader) []string {
 	return readFilePaths(reader, bufio.ScanLines)
 }
 
-func ReadPathsFromNullDelimited(reader io.Reader) []string {
+func ReadFilePathsFromNullDelimited(reader io.Reader) []string {
 	return readFilePaths(reader, scanNullDelimited)
 }
 

@@ -4,6 +4,8 @@ import (
 	"testing"
 	"strings"
 	"reflect"
+	"io/ioutil"
+	"os"
 )
 
 func yes(string) bool {
@@ -37,28 +39,36 @@ func Test_readItems(t*testing.T) {
 	}
 }
 
-func Test_ReadPaths(t*testing.T) {
+func Test_ReadFilePaths_filters_nonfiles(t*testing.T) {
+	file, err := ioutil.TempFile("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
 	data := []struct {
 		input string
 		lines []string
 	}{
 		{"", []string{}},
-		{".\nnonexistent", []string{"."}},
-		{".\n.", []string{"."}},
-		{".\n.\n/", []string{".", "/"}},
-		{".\n./\n/\n//", []string{".", "/"}},
-		{".\n\n.\n.\n/\n/", []string{".", "/"}},
+		{".\nnonexistent", []string{}},
+		{".\n.", []string{}},
+		{".\n.\n/", []string{}},
+		{".\n./\n/\n//", []string{}},
+		{".\n\n.\n.\n/\n/", []string{}},
+		{"\n\n\n" + file.Name() + "\n\n\n", []string{file.Name()}},
+		{"\n" + file.Name() + "\n" + file.Name() + "\n", []string{file.Name()}},
 	}
 
 	for _, item := range data {
 		expected := item.lines
-		actual := ReadPathsFromLines(strings.NewReader(item.input))
+		actual := ReadFilePathsFromLines(strings.NewReader(item.input))
 		if !reflect.DeepEqual(expected, actual) {
 			t.Errorf("got %#v, expected %#v", actual, expected)
 		}
 
 		input2 := strings.Replace(item.input, "\n", "\000", -1)
-		actual2 := ReadPathsFromNullDelimited(strings.NewReader(input2))
+		actual2 := ReadFilePathsFromNullDelimited(strings.NewReader(input2))
 		if !reflect.DeepEqual(expected, actual2) {
 			t.Errorf("got %#v, expected %#v", actual2, expected)
 		}
@@ -66,17 +76,25 @@ func Test_ReadPaths(t*testing.T) {
 }
 
 func Test_FilterPaths(t*testing.T) {
+	file, err := ioutil.TempFile("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
 	data := []struct {
 		input string
 		paths []string
 	}{
 		{"", []string{}},
-		{".\nnonexistent", []string{"."}},
-		{".\n.", []string{"."}},
-		{".\n.\n/", []string{".", "/"}},
-		{".\n/\n//", []string{".", "/"}},
-		{".\n//\n/", []string{".", "/"}},
-		{".\n\n.\n.\n/\n/", []string{".", "/"}},
+		{".\nnonexistent", []string{}},
+		{".\n.", []string{}},
+		{".\n.\n/", []string{}},
+		{".\n/\n//", []string{}},
+		{".\n//\n/", []string{}},
+		{".\n\n.\n.\n/\n/", []string{}},
+		{"\n\n\n" + file.Name() + "\n\n\n", []string{file.Name()}},
+		{"\n" + file.Name() + "\n" + file.Name() + "\n", []string{file.Name()}},
 	}
 
 	for _, item := range data {
