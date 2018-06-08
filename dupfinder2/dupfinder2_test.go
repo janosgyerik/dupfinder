@@ -57,7 +57,7 @@ func Test_find_two_groups_in_fake_files(t *testing.T) {
 }
 
 func Test_find_two_groups_in_files(t *testing.T) {
-	tracker := NewTracker(newFileFilter())
+	tracker := NewTracker(NewFileFilter())
 	tracker.Add(newTestFileItem("foo"))
 	tracker.Add(newTestFileItem("foo"))
 	tracker.Add(newTestFileItem("bar"))

@@ -92,22 +92,26 @@ func newGroup(item Item) Group {
 
 
 type FileItem struct {
-	path string
+	Path string
 }
 
 func (f *FileItem) Equals(other Item) bool {
 	f2 := other.(*FileItem)
 
-	s1, err1 := ioutil.ReadFile(f.path)
+	s1, err1 := ioutil.ReadFile(f.Path)
 	if err1 != nil {
-		panic("could not read file: " + f.path)
+		panic("could not read file: " + f.Path)
 	}
 
-	s2, err2 := ioutil.ReadFile(f2.path)
+	s2, err2 := ioutil.ReadFile(f2.Path)
 	if err2 != nil {
-		panic("could not read file: " + f.path)
+		panic("could not read file: " + f.Path)
 	}
 	return string(s1) == string(s2)
+}
+
+func NewFileItem(path string) Item {
+	return &FileItem{path}
 }
 
 type Key int
@@ -120,7 +124,7 @@ type sizeExtractor struct {
 }
 
 func (s *sizeExtractor) Key(item Item) Key {
-	fi, e := os.Stat(item.(*FileItem).path)
+	fi, e := os.Stat(item.(*FileItem).Path)
 	if e != nil {
 		return 0
 	}
@@ -143,6 +147,6 @@ func (f *defaultFilter) Register(item Item, g Group) {
 	f.byKey[f.keyExtractor.Key(item)] = append(f.byKey[f.keyExtractor.Key(item)], g)
 }
 
-func newFileFilter() Filter {
+func NewFileFilter() Filter {
 	return &defaultFilter{byKey: make(map[Key][]Group), keyExtractor: &sizeExtractor{}}
 }
