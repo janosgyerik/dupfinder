@@ -1,5 +1,7 @@
 package dupfinder2
 
+import "fmt"
+
 type Item interface {
 	Equals(Item) bool
 }
@@ -17,11 +19,19 @@ type Tracker interface {
 
 type defaultTracker struct {
 	groups []Group
+	filter Filter
+}
+
+type Filter interface {
+	CandidateGroups(Item) []Group
+	Register(Item, Group)
 }
 
 func (t *defaultTracker) Add(item Item) {
+	candidates := t.filter.CandidateGroups(item)
+
 	found := false
-	for _, g := range t.groups {
+	for _, g := range candidates {
 		if g.Accepts(item) {
 			g.Add(item)
 			found = true
@@ -30,7 +40,9 @@ func (t *defaultTracker) Add(item Item) {
 	}
 
 	if !found {
-		t.groups = append(t.groups, newGroup(item))
+		group := newGroup(item)
+		t.groups = append(t.groups, group)
+		t.filter.Register(item, group)
 	}
 }
 
@@ -44,8 +56,8 @@ func (t *defaultTracker) Dups() []Group {
 	return dups
 }
 
-func NewTracker() Tracker {
-	return &defaultTracker{}
+func NewTracker(filter Filter) Tracker {
+	return &defaultTracker{filter: filter}
 }
 
 type defaultGroup struct {
@@ -62,6 +74,10 @@ func (g *defaultGroup) Add(item Item) {
 
 func (g *defaultGroup) Accepts(item Item) bool {
 	return g.items[0].Equals(item)
+}
+
+func (g *defaultGroup) String() string {
+	return fmt.Sprintf("%v", g.items)
 }
 
 func newGroup(item Item) Group {
