@@ -3,6 +3,8 @@ package dupfinder2
 import (
 	"testing"
 	"fmt"
+	"os"
+	"io/ioutil"
 )
 
 func Test_find_no_groups_from_two_distinct(t *testing.T) {
@@ -39,7 +41,7 @@ func Test_find_two_groups(t *testing.T) {
 	}
 }
 
-func Test_find_two_groups_in_files(t *testing.T) {
+func Test_find_two_groups_in_fake_files(t *testing.T) {
 	tracker := NewTracker(newFakeFileFilter())
 	tracker.Add(newFakeFileItem("foo", 1, "foo"))
 	tracker.Add(newFakeFileItem("bar", 1, "foo"))
@@ -54,10 +56,18 @@ func Test_find_two_groups_in_files(t *testing.T) {
 	}
 }
 
-type Key int
+func Test_find_two_groups_in_files(t *testing.T) {
+	tracker := NewTracker(newFileFilter())
+	tracker.Add(newTestFileItem("foo"))
+	tracker.Add(newTestFileItem("foo"))
+	tracker.Add(newTestFileItem("bar"))
+	tracker.Add(newTestFileItem("bar"))
+	tracker.Add(newTestFileItem("bar"))
+	tracker.Add(newTestFileItem("baz"))
 
-type KeyExtractor interface {
-	Key(Item) Key
+	if c := len(tracker.Dups()); c != 2 {
+		t.Fatalf("got %d groups; expected 2 groups of duplicates", c)
+	}
 }
 
 type keyExtractor struct {
@@ -67,24 +77,8 @@ func (k *keyExtractor) Key(item Item) Key {
 	return Key(item.(*testItem).id)
 }
 
-type testFilter struct {
-	byId         map[Key][]Group
-	keyExtractor KeyExtractor
-}
-
-func (f *testFilter) CandidateGroups(item Item) []Group {
-	if g, found := f.byId[f.keyExtractor.Key(item)]; found {
-		return g
-	}
-	return nil
-}
-
-func (f *testFilter) Register(item Item, g Group) {
-	f.byId[f.keyExtractor.Key(item)] = append(f.byId[f.keyExtractor.Key(item)], g)
-}
-
 func newFilter() Filter {
-	return &testFilter{byId: make(map[Key][]Group), keyExtractor: &keyExtractor{}}
+	return &defaultFilter{byKey: make(map[Key][]Group), keyExtractor: &keyExtractor{}}
 }
 
 func newTracker() Tracker {
@@ -129,5 +123,27 @@ func (s *fakeSizeExtractor) Key(item Item) Key {
 }
 
 func newFakeFileFilter() Filter {
-	return &testFilter{byId: make(map[Key][]Group), keyExtractor: &fakeSizeExtractor{}}
+	return &defaultFilter{byKey: make(map[Key][]Group), keyExtractor: &fakeSizeExtractor{}}
+}
+
+func newTestFileItem(content string) Item {
+	return &FileItem{newTempFileWithContent(content)}
+}
+
+func newTempFile() *os.File {
+	file, err := ioutil.TempFile(os.TempDir(), "test")
+
+	if err != nil {
+		panic("Failed to create temporary file")
+	}
+
+	return file
+}
+
+func newTempFileWithContent(content string) string {
+	file := newTempFile()
+	file.WriteString(content)
+	file.Close()
+
+	return file.Name()
 }
