@@ -17,14 +17,14 @@ type Tracker interface {
 	Dups() []Group
 }
 
-type defaultTracker struct {
-	groups []Group
-	filter Filter
-}
-
 type Filter interface {
 	CandidateGroups(Item) []Group
 	Register(Item, Group)
+}
+
+type defaultTracker struct {
+	groups []Group
+	filter Filter
 }
 
 func (t *defaultTracker) Add(item Item) {

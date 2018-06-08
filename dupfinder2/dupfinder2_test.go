@@ -7,8 +7,8 @@ import (
 
 func Test_find_no_groups_from_two_distinct(t *testing.T) {
 	tracker := newTracker()
-	tracker.Add(newItem(1))
-	tracker.Add(newItem(2))
+	tracker.Add(newTestItem(1))
+	tracker.Add(newTestItem(2))
 
 	if len(tracker.Dups()) != 0 {
 		t.Fatal("expected no duplicates")
@@ -17,8 +17,8 @@ func Test_find_no_groups_from_two_distinct(t *testing.T) {
 
 func Test_find_a_group_from_two_equal(t *testing.T) {
 	tracker := newTracker()
-	tracker.Add(newItem(1))
-	tracker.Add(newItem(1))
+	tracker.Add(newTestItem(1))
+	tracker.Add(newTestItem(1))
 
 	if len(tracker.Dups()) != 1 {
 		t.Fatal("expected 1 group of duplicates")
@@ -27,12 +27,27 @@ func Test_find_a_group_from_two_equal(t *testing.T) {
 
 func Test_find_two_groups(t *testing.T) {
 	tracker := newTracker()
-	tracker.Add(newItem(1))
-	tracker.Add(newItem(1))
-	tracker.Add(newItem(2))
-	tracker.Add(newItem(2))
-	tracker.Add(newItem(2))
-	tracker.Add(newItem(3))
+	tracker.Add(newTestItem(1))
+	tracker.Add(newTestItem(1))
+	tracker.Add(newTestItem(2))
+	tracker.Add(newTestItem(2))
+	tracker.Add(newTestItem(2))
+	tracker.Add(newTestItem(3))
+
+	if len(tracker.Dups()) != 2 {
+		t.Fatal("expected 2 groups of duplicates")
+	}
+}
+
+func Test_find_two_groups_in_files(t *testing.T) {
+	tracker := NewTracker(newFakeFileFilter())
+	tracker.Add(newFakeFileItem("foo", 1, "foo"))
+	tracker.Add(newFakeFileItem("bar", 1, "foo"))
+	tracker.Add(newFakeFileItem("a1", 2, "abc"))
+	tracker.Add(newFakeFileItem("a2", 2, "abc"))
+	tracker.Add(newFakeFileItem("a3", 2, "abc"))
+	tracker.Add(newFakeFileItem("x1", 3, "foo"))
+	tracker.Add(newFakeFileItem("x2", 4, "abc"))
 
 	if len(tracker.Dups()) != 2 {
 		t.Fatal("expected 2 groups of duplicates")
@@ -88,6 +103,31 @@ func (t *testItem) String() string {
 	return fmt.Sprintf("%v", t.id)
 }
 
-func newItem(id int) Item {
+func newTestItem(id int) Item {
 	return &testItem{id}
+}
+
+type fakeFileItem struct {
+	path    string
+	size    int
+	content string
+}
+
+func (f *fakeFileItem) Equals(other Item) bool {
+	return f.content == other.(*fakeFileItem).content
+}
+
+func newFakeFileItem(path string, size int, content string) Item {
+	return &fakeFileItem{path, size, content}
+}
+
+type fakeSizeExtractor struct {
+}
+
+func (s *fakeSizeExtractor) Key(item Item) Key {
+	return Key(item.(*fakeFileItem).size)
+}
+
+func newFakeFileFilter() Filter {
+	return &testFilter{byId: make(map[Key][]Group), keyExtractor: &fakeSizeExtractor{}}
 }
