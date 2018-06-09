@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/janosgyerik/dupfinder/finder"
 	"github.com/janosgyerik/dupfinder/pathreader"
-	"github.com/janosgyerik/dupfinder/dupfinder2"
+	"github.com/janosgyerik/dupfinder/dupfinder3"
 )
+
+var verbose bool
 
 func exit() {
 	flag.Usage()
@@ -19,12 +21,14 @@ type Params struct {
 	minSize int64
 	stdin   bool
 	stdin0  bool
+	verbose bool
 }
 
 func parseArgs() Params {
 	minSizePtr := flag.Int64("minSize", 1, "minimum file size")
 	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
+	verbosePtr := flag.Bool("verbose", false, "verbose mode, print stats on stderr")
 
 	flag.Parse()
 
@@ -44,27 +48,67 @@ func parseArgs() Params {
 	return Params{
 		paths:   paths,
 		minSize: *minSizePtr,
+		verbose: *verbosePtr,
 	}
+}
+
+func printLine(args ...interface{}) {
+	if !verbose {
+		return
+	}
+	fmt.Fprintln(os.Stderr, args...)
+}
+
+func status(first string, args ...interface{}) {
+	if !verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "\r"+first, args...)
+}
+
+type logger struct{}
+
+func (log *logger) NewDuplicate(items []*dupfinder3.FileItem, item *dupfinder3.FileItem) {
+	printLine()
+	for _, oldItem := range items {
+		printLine(oldItem.Path)
+	}
+	printLine("->", item.Path, item.Size)
+	printLine()
 }
 
 func main() {
 	params := parseArgs()
 
+	verbose = params.verbose
+
 	filefinder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
+
+	printLine("Collecting paths to check ...")
 
 	var paths []string
 	for _, path := range params.paths {
 		paths = append(paths, filefinder.FindAll(path)...)
 	}
 
-	tracker := dupfinder2.NewTracker(dupfinder2.NewFileFilter())
+	printLine("Files:", len(paths))
+
+	tracker := dupfinder3.NewTracker()
+	tracker.SetLogger(&logger{})
+
+	i := 1
 	for _, path := range paths {
-		tracker.Add(dupfinder2.NewFileItem(path))
+		tracker.Add(path)
+		status("Processing %d / %d", i, len(paths))
+		i += 1
 	}
 
-	for _, dup := range tracker.Dups() {
-		for _, item := range dup.Items() {
-			fmt.Println(item.(*dupfinder2.FileItem).Path)
+	printLine()
+
+	for _, group := range tracker.Dups() {
+		fmt.Println("# file sizes:", dupfinder3.FileSize(group[0]))
+		for _, path := range group {
+			fmt.Println(path)
 		}
 		fmt.Println()
 	}

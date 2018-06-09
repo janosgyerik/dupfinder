@@ -11,32 +11,37 @@ import (
 type Tracker interface {
 	Add(path string)
 	Dups() [][]string
+	SetLogger(Logger)
 }
 
-type fileItem struct {
-	path string
-	size int64
+type FileItem struct {
+	Path string
+	Size int64
 }
 
-func newFileItem(path string) *fileItem {
+func FileSize(path string) int64 {
 	fi, e := os.Stat(path)
 	if e != nil {
 		panic(e)
 	}
-	return &fileItem{path, fi.Size()}
+	return fi.Size()
+}
+
+func newFileItem(path string) *FileItem {
+	return &FileItem{path, FileSize(path)}
 }
 
 type group struct {
-	items []*fileItem
+	items []*FileItem
 }
 
-func (g *group) add(item *fileItem) {
+func (g *group) add(item *FileItem) {
 	g.items = append(g.items, item)
 }
 
-func (g *group) fits(item *fileItem) bool {
-	p1 := g.items[0].path
-	p2 := item.path
+func (g *group) fits(item *FileItem) bool {
+	p1 := g.items[0].Path
+	p2 := item.Path
 
 	s1, err1 := ioutil.ReadFile(p1)
 	if err1 != nil {
@@ -55,22 +60,32 @@ func (g *group) String() string {
 	return fmt.Sprintf("%v", g.items)
 }
 
-func newGroup(item *fileItem) *group {
+func newGroup(item *FileItem) *group {
 	g := &group{}
 	g.add(item)
 	return g
 }
 
+type Logger interface {
+	NewDuplicate([]*FileItem, *FileItem)
+}
+
+type nullLogger struct{}
+
+func (logger *nullLogger) NewDuplicate([]*FileItem, *FileItem) {}
+
 type tracker struct {
 	groups      []*group
 	indexBySize map[int64][]*group
+	logger      Logger
 }
 
 func (t *tracker) Add(path string) {
 	item := newFileItem(path)
 
-	for _, g := range t.indexBySize[item.size] {
+	for _, g := range t.indexBySize[item.Size] {
 		if g.fits(item) {
+			t.logger.NewDuplicate(g.items, item)
 			g.add(item)
 			return
 		}
@@ -78,7 +93,7 @@ func (t *tracker) Add(path string) {
 
 	group := newGroup(item)
 	t.groups = append(t.groups, group)
-	t.indexBySize[item.size] = append(t.indexBySize[item.size], group)
+	t.indexBySize[item.Size] = append(t.indexBySize[item.Size], group)
 }
 
 type byPath []string
@@ -99,7 +114,7 @@ func (t *tracker) Dups() [][]string {
 		if len(g.items) > 1 {
 			paths := make([]string, 0)
 			for _, item := range g.items {
-				paths = append(paths, item.path)
+				paths = append(paths, item.Path)
 			}
 			sort.Sort(byPath(paths))
 			dups = append(dups, paths)
@@ -109,8 +124,13 @@ func (t *tracker) Dups() [][]string {
 	return dups
 }
 
+func (t *tracker) SetLogger(logger Logger) {
+	t.logger = logger
+}
+
 func NewTracker() Tracker {
 	t := &tracker{}
 	t.indexBySize = make(map[int64][]*group)
+	t.logger = &nullLogger{}
 	return t
 }
