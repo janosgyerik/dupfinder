@@ -1,4 +1,4 @@
-package dupfinder
+package main
 
 import (
 	"testing"
@@ -6,6 +6,8 @@ import (
 	"path"
 	"os"
 	"reflect"
+	"os/exec"
+	"strings"
 )
 
 var tempdir string
@@ -25,7 +27,7 @@ func Test_find_no_groups_from_two_distinct(t *testing.T) {
 	createTempFiles(fdata)
 	defer deleteTempFiles()
 
-	if actual := normalize(run(fdata)); !reflect.DeepEqual(expected, actual) {
+	if actual := normalize(run()); !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("got:\n%#v\nexpected:\n%#v", actual, expected)
 	}
 }
@@ -40,7 +42,7 @@ func Test_find_one_group(t *testing.T) {
 	createTempFiles(fdata)
 	defer deleteTempFiles()
 
-	if actual := normalize(run(fdata)); !reflect.DeepEqual(expected, actual) {
+	if actual := normalize(run()); !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("got:\n%#v\nexpected:\n%#v", actual, expected)
 	}
 }
@@ -69,21 +71,32 @@ func Test_find_multiple_varied_sized_groups(t *testing.T) {
 	createTempFiles(fdata)
 	defer deleteTempFiles()
 
-	if actual := normalize(run(fdata)); !reflect.DeepEqual(expected, actual) {
+	if actual := normalize(run()); !reflect.DeepEqual(expected, actual) {
 		t.Fatalf("got:\n%#v\nexpected:\n%#v", actual, expected)
 	}
 }
 
-func normalize(groups [][]string) [][]string {
+func normalize(out string) [][]string {
 	var result [][]string
-	for _, g := range groups {
-		var stripped []string
-		for _, p := range g {
-			stripped = append(stripped, p[len(tempdir)+1:])
+	var current []string
+
+	for _, p := range strings.Split(out, "\n") {
+		if len(p) == 0 {
+			if len(current) > 0 {
+				result = append(result, current)
+			}
+			current = make([]string, 0)
+		} else if p[0] != '#' {
+			current = append(current, p[len(tempdir)+1:])
 		}
-		result = append(result, stripped)
 	}
 	return result
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 func createTempFiles(data []fileData) {
@@ -105,11 +118,8 @@ func deleteTempFiles() {
 	check(err)
 }
 
-func run(fdata []fileData) [][]string {
-	t := NewTracker()
-	for _, v := range fdata {
-		t.Add(path.Join(tempdir, v.relpath))
-	}
-
-	return t.Dups()
+func run() string {
+	out, err := exec.Command("go", "run", "main.go", tempdir).Output()
+	check(err)
+	return string(out)
 }

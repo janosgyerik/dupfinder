@@ -1,333 +1,176 @@
 package dupfinder
 
 import (
-	"os"
-	"bytes"
-	"io"
-	"sort"
 	"fmt"
-	"strings"
+	"os"
+	"sort"
+	"io"
+	"reflect"
 )
 
-const chunkSize = 64000
+const chunkSize = 4096
 
-func chunker(r io.Reader, ch chan <- []byte, ready chan bool) {
-	buf := make([]byte, chunkSize)
-	for <- ready {
-		n, err := r.Read(buf)
+type Tracker interface {
+	Add(path string)
+	Dups() [][]string
+	SetLogger(Logger)
+}
 
-		if err != nil {
-			if err == io.EOF {
-				ch <- buf[:n]
-			}
-			close(ch)
-			return
-		}
+type FileItem struct {
+	Path string
+	Size int64
+}
 
-		ch <- buf
+func FileSize(path string) int64 {
+	fi, e := os.Stat(path)
+	if e != nil {
+		panic(e)
+	}
+	return fi.Size()
+}
+
+func newFileItem(path string) *FileItem {
+	return &FileItem{path, FileSize(path)}
+}
+
+type group struct {
+	items   []*FileItem
+	tracker *tracker
+}
+
+func (g *group) add(item *FileItem) {
+	g.items = append(g.items, item)
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
 	}
 }
 
-type cmpResult struct {
-	cmp       int
-	errFirst  error
-	errSecond error
-	done      bool
-	success   bool
-}
+func (g *group) fits(item *FileItem) bool {
+	p1 := g.items[0].Path
+	p2 := item.Path
 
-func done(cmp int) cmpResult {
-	return cmpResult{cmp: cmp, done: true, success: true}
-}
+	f1, err := os.Open(p1)
+	check(err)
+	defer f1.Close()
 
-func undecided() cmpResult {
-	return cmpResult{}
-}
+	f2, err := os.Open(p2)
+	check(err)
+	defer f2.Close()
 
-func errFirst(err error) cmpResult {
-	return cmpResult{errFirst: err, done: true}
-}
-
-func errSecond(err error) cmpResult {
-	return cmpResult{errSecond: err, done: true}
-}
-
-func compare(a, b int64) int {
-	if a < b {
-		return -1
-	}
-	if b < a {
-		return 1
-	}
-	return 0
-}
-
-func compareFilesBySize(path1, path2 string) cmpResult {
-	st1, err := os.Stat(path1)
-	if err != nil {
-		return errFirst(err)
-	}
-
-	st2, err := os.Stat(path2)
-	if err != nil {
-		return errSecond(err)
-	}
-
-	cmp := compare(st1.Size(), st2.Size())
-	if cmp != 0 {
-		return done(cmp)
-	}
-
-	return undecided()
-}
-
-func compareFilesByContent(path1, path2 string) cmpResult {
-	fd1, err := os.Open(path1)
-	defer fd1.Close()
-	if err != nil {
-		return errFirst(err)
-	}
-
-	fd2, err := os.Open(path2)
-	defer fd2.Close()
-	if err != nil {
-		return errSecond(err)
-	}
-
-	return compareReaders(fd1, fd2)
-}
-
-func compareFiles(path1, path2 string) cmpResult {
-	r := compareFilesBySize(path1, path2)
-	if r.done {
-		return r
-	}
-
-	return compareFilesByContent(path1, path2)
-}
-
-func compareReaders(fd1, fd2 io.Reader) cmpResult {
-	ch1 := make(chan []byte)
-	ch2 := make(chan []byte)
-
-	ready1 := make(chan bool)
-	defer close(ready1)
-
-	ready2 := make(chan bool)
-	defer close(ready2)
-
-	go chunker(fd1, ch1, ready1)
-	go chunker(fd2, ch2, ready2)
+	buf1 := make([]byte, chunkSize)
+	buf2 := make([]byte, chunkSize)
 
 	for {
-		ready1 <- true
-		ready2 <- true
+		n1, err1 := f1.Read(buf1)
+		n2, err2 := f2.Read(buf2)
 
-		buf1 := <-ch1
-		buf2 := <-ch2
+		g.tracker.logger.BytesRead(n1 + n2)
 
-		cmp := bytes.Compare(buf1, buf2)
-		if cmp != 0 {
-			return done(cmp)
+		if n1 != n2 {
+			return false
 		}
 
-		if len(buf1) == 0 {
-			return done(cmp)
+		if n1 == 0 {
+			return err1 == io.EOF && err2 == io.EOF
+		}
+
+		if !reflect.DeepEqual(buf1, buf2) {
+			return false
 		}
 	}
 }
 
-type DupGroup struct {
-	paths map[string]bool
+func (g *group) String() string {
+	return fmt.Sprintf("%v", g.items)
 }
 
-func newDupGroup() DupGroup {
-	return DupGroup{make(map[string]bool)}
+func newGroup(t *tracker, item *FileItem) *group {
+	g := &group{tracker: t}
+	g.add(item)
+	return g
 }
 
-func (gr DupGroup) add(path string) {
-	gr.paths[path] = true
+type Logger interface {
+	NewDuplicate([]*FileItem, *FileItem)
+	BytesRead(count int)
 }
 
-func (gr DupGroup) count() int {
-	return len(gr.paths)
+type nullLogger struct{}
+
+func (logger *nullLogger) NewDuplicate([]*FileItem, *FileItem) {}
+
+func (logger *nullLogger) BytesRead(int) {}
+
+type tracker struct {
+	groups      []*group
+	indexBySize map[int64][]*group
+	logger      Logger
 }
 
-func (gr DupGroup) GetPaths() []string {
-	paths := keys(gr.paths)
-	sort.Strings(paths)
-	return paths
-}
+func (t *tracker) Add(path string) {
+	item := newFileItem(path)
 
-func keys(m map[string]bool) []string {
-	keys := make([]string, 0)
-	for key, _ := range m {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-type dupTracker struct {
-	pools    map[string]DupGroup
-	failures []Failure
-}
-
-func newDupTracker() *dupTracker {
-	return &dupTracker{make(map[string]DupGroup), make([]Failure, 0)}
-}
-
-func (tracker dupTracker) add(path1, path2 string) {
-	pool1, ok1 := tracker.pools[path1]
-	pool2, ok2 := tracker.pools[path2]
-
-	if ok1 && ok2 {
-		tracker.mergePools(path1, path2)
-	} else if ok1 {
-		tracker.addToPool(path2, pool1)
-	} else if ok2 {
-		tracker.addToPool(path1, pool2)
-	} else {
-		pool := newDupGroup()
-		tracker.addToPool(path1, pool)
-		tracker.addToPool(path2, pool)
-	}
-}
-
-func (tracker dupTracker) addToPool(path string, pool DupGroup) {
-	pool.add(path)
-	tracker.pools[path] = pool
-}
-
-func (tracker dupTracker) mergePools(path1, path2 string) {
-	pool := tracker.getPool(path1)
-	for _, path := range tracker.getPool(path2).GetPaths() {
-		tracker.addToPool(path, pool)
-	}
-}
-
-func (tracker dupTracker) getPool(path string) DupGroup {
-	return tracker.pools[path]
-}
-
-func (tracker *dupTracker) err(path string, err error) {
-	tracker.failures = append(tracker.failures, Failure{path, err})
-}
-
-// methods to sort Duplicates by item count
-type duplicatesList []DupGroup
-
-func (p duplicatesList) Len() int {
-	return len(p)
-}
-func (p duplicatesList) Less(i, j int) bool {
-	return p[i].count() < p[j].count()
-}
-func (p duplicatesList) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-func (tracker dupTracker) getDupGroups() []DupGroup {
-	duplicates := make([]DupGroup, 0)
-	for _, pool := range tracker.pools {
-		duplicates = append(duplicates, pool)
-		for _, path := range pool.GetPaths() {
-			delete(tracker.pools, path)
+	for _, g := range t.indexBySize[item.Size] {
+		if g.fits(item) {
+			t.logger.NewDuplicate(g.items, item)
+			g.add(item)
+			return
 		}
 	}
-	sort.Sort(duplicatesList(duplicates))
-	return duplicates
+
+	group := newGroup(t, item)
+	t.groups = append(t.groups, group)
+	t.indexBySize[item.Size] = append(t.indexBySize[item.Size], group)
 }
 
-type failuresList []Failure
+type byPath []string
 
-func (p failuresList) Len() int {
-	return len(p)
-}
-func (p failuresList) Less(i, j int) bool {
-	return strings.Compare(p[i].Path, p[j].Path) < 0
-}
-func (p failuresList) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
+func (a byPath) Len() int           { return len(a) }
+func (a byPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byPath) Less(i, j int) bool { return a[i] < a[j] }
 
-func (tracker dupTracker) getFailures() []Failure {
-	failures := append(make([]Failure, 0), tracker.failures...)
-	sort.Sort(failuresList(failures))
-	return failures
-}
+type bySizeAndFirstPath [][]string
 
-type Failure struct {
-	Path  string
-	Error error
-}
-
-type Result struct {
-	Groups   []DupGroup
-	Failures []Failure
-}
-
-func FindDuplicates(paths []string) Result {
-	tracker := newDupTracker()
-
-	mergesort(tracker, paths, 0, len(paths))
-
-	return Result{
-		Groups: tracker.getDupGroups(),
-		Failures: tracker.getFailures(),
+func (a bySizeAndFirstPath) Len() int      { return len(a) }
+func (a bySizeAndFirstPath) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a bySizeAndFirstPath) Less(i, j int) bool {
+	s1 := FileSize(a[i][0])
+	s2 := FileSize(a[j][0])
+	if s1 < s2 {
+		return true
 	}
-}
-
-func mergesort(tracker *dupTracker, paths []string, low, high int) {
-	if low + 1 >= high {
-		return
+	if s1 > s2 {
+		return false
 	}
-
-	mid := low + (high - low) / 2
-	mergesort(tracker, paths, low, mid)
-	mergesort(tracker, paths, mid, high)
-	merge(tracker, paths, low, mid, high)
+	return a[i][0] < a[j][0]
 }
 
-func merge(tracker *dupTracker, paths []string, low, mid, high int) {
-	work := make([]string, 0, high - low)
-
-	var i, j int
-	for i, j = low, mid; i < mid && j < high; {
-		p1 := paths[i]
-		p2 := paths[j]
-		r := compareFiles(p1, p2)
-		if r.success {
-			cmp := r.cmp
-			if cmp == 0 {
-				tracker.add(p1, p2)
-				work = append(work, p1, p2)
-				i++
-				j++
-			} else if cmp < 0 {
-				work = append(work, p1)
-				i++
-			} else {
-				work = append(work, p2)
-				j++
+func (t *tracker) Dups() [][]string {
+	dups := make([][]string, 0)
+	for _, g := range t.groups {
+		if len(g.items) > 1 {
+			paths := make([]string, 0)
+			for _, item := range g.items {
+				paths = append(paths, item.Path)
 			}
-		} else {
-			work = append(work, "")
-			if r.errFirst != nil {
-				tracker.err(paths[i], r.errFirst)
-				i++
-			} else if r.errSecond != nil {
-				tracker.err(paths[j], r.errSecond)
-				j++
-			} else {
-				panic(fmt.Sprintf("illegal state for cmpResult: %#v", r))
-			}
+			sort.Sort(byPath(paths))
+			dups = append(dups, paths)
 		}
 	}
+	sort.Sort(bySizeAndFirstPath(dups))
+	return dups
+}
 
-	work = append(work, paths[i:mid]...)
-	work = append(work, paths[j:high]...)
+func (t *tracker) SetLogger(logger Logger) {
+	t.logger = logger
+}
 
-	for i = low; i < high; i++ {
-		paths[i] = work[i - low]
-	}
+func NewTracker() Tracker {
+	t := &tracker{}
+	t.indexBySize = make(map[int64][]*group)
+	t.logger = &nullLogger{}
+	return t
 }
