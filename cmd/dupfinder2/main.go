@@ -47,12 +47,13 @@ func parseArgs() Params {
 	}
 }
 
+// TODO do not follow symlinks
 func main() {
 	params := parseArgs()
 
 	filefinder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
 
-	paths := []string{}
+	var paths []string
 	for _, path := range params.paths {
 		paths = append(paths, filefinder.FindAll(path)...)
 	}
@@ -62,7 +63,6 @@ func main() {
 		tracker.Add(dupfinder2.NewFileItem(path))
 	}
 
-	// TODO consistent deterministic ordering
 	for _, dup := range tracker.Dups() {
 		for _, item := range dup.Items() {
 			fmt.Println(item.(*dupfinder2.FileItem).Path)

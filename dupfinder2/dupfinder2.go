@@ -46,6 +46,7 @@ func (t *tracker) Add(item Item) {
 	t.filter.Register(item, group)
 }
 
+// TODO consistent deterministic ordering
 func (t *tracker) Dups() []Group {
 	dups := make([]Group, 0)
 	for _, g := range t.groups {
