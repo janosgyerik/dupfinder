@@ -34,20 +34,16 @@ type defaultTracker struct {
 func (t *defaultTracker) Add(item Item) {
 	candidates := t.filter.CandidateGroups(item)
 
-	found := false
 	for _, g := range candidates {
 		if g.Accepts(item) {
 			g.Add(item)
-			found = true
-			break
+			return
 		}
 	}
 
-	if !found {
-		group := newGroup(item)
-		t.groups = append(t.groups, group)
-		t.filter.Register(item, group)
-	}
+	group := newGroup(item)
+	t.groups = append(t.groups, group)
+	t.filter.Register(item, group)
 }
 
 func (t *defaultTracker) Dups() []Group {
@@ -89,7 +85,6 @@ func newGroup(item Item) Group {
 	g.Add(item)
 	return g
 }
-
 
 type FileItem struct {
 	Path string
