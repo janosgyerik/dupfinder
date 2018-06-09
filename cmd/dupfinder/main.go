@@ -104,10 +104,15 @@ func main() {
 
 	printLine("Collecting paths to check ...")
 
+	filter := dupfinder.NewDefaultFilter()
 	var paths []string
 	i := 1
 	for path := range params.paths {
-		paths = append(paths, path)
+		normalized := dupfinder.NormalizePath(path)
+		if !filter(normalized) {
+			continue
+		}
+		paths = append(paths, normalized)
 		status("Found: %d", i)
 		i += 1
 	}

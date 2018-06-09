@@ -6,6 +6,7 @@ import (
 	"sort"
 	"io"
 	"reflect"
+	"path/filepath"
 )
 
 const chunkSize = 4096
@@ -173,4 +174,38 @@ func NewTracker() Tracker {
 	t.indexBySize = make(map[int64][]*group)
 	t.logger = &nullLogger{}
 	return t
+}
+
+type PathFilter func(string) bool
+
+func NormalizePath(path string) string {
+	return filepath.Clean(path)
+}
+
+func newUniqueFilter() PathFilter {
+	seen := make(map[string]bool)
+
+	return func(s string) bool {
+		if _, ok := seen[s]; !ok {
+			seen[s] = true
+			return true
+		}
+		return false
+	}
+}
+
+func isFile(s string) bool {
+	stat, err := os.Lstat(s)
+	if err != nil {
+		return false
+	}
+	return stat.Mode().IsRegular()
+}
+
+func NewDefaultFilter() PathFilter {
+	isUnique := newUniqueFilter()
+
+	return func(s string) bool {
+		return isFile(s) && isUnique(s)
+	}
 }
