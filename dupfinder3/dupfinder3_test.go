@@ -86,12 +86,6 @@ func normalize(groups [][]string) [][]string {
 	return result
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func createTempFiles(data []fileData) {
 	var err error
 	tempdir, err = ioutil.TempDir("", "test")

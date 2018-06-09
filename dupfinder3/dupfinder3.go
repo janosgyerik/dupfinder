@@ -2,11 +2,13 @@ package dupfinder3
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"reflect"
 	"sort"
+	"io"
+	"reflect"
 )
+
+const chunkSize = 4096
 
 type Tracker interface {
 	Add(path string)
@@ -40,23 +42,45 @@ func (g *group) add(item *FileItem) {
 	g.items = append(g.items, item)
 }
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func (g *group) fits(item *FileItem) bool {
 	p1 := g.items[0].Path
 	p2 := item.Path
 
-	s1, err1 := ioutil.ReadFile(p1)
-	if err1 != nil {
-		panic("could not read file: " + p1)
+	f1, err := os.Open(p1)
+	check(err)
+	defer f1.Close()
+
+	f2, err := os.Open(p2)
+	check(err)
+	defer f2.Close()
+
+	buf1 := make([]byte, chunkSize)
+	buf2 := make([]byte, chunkSize)
+
+	for {
+		n1, err1 := f1.Read(buf1)
+		n2, err2 := f2.Read(buf2)
+
+		g.tracker.logger.BytesRead(n1 + n2)
+
+		if n1 != n2 {
+			return false
+		}
+
+		if n1 == 0 {
+			return err1 == io.EOF && err2 == io.EOF
+		}
+
+		if !reflect.DeepEqual(buf1, buf2) {
+			return false
+		}
 	}
-
-	s2, err2 := ioutil.ReadFile(p2)
-	if err2 != nil {
-		panic("could not read file: " + p2)
-	}
-
-	g.tracker.logger.BytesRead(len(s1) * 2)
-
-	return reflect.DeepEqual(s1, s2)
 }
 
 func (g *group) String() string {
