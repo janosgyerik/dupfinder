@@ -56,13 +56,13 @@ func Test_find_multiple_varied_sized_groups(t *testing.T) {
 	}
 	expected := [][]string{
 		{
-			"f1.txt",
-			"a/f2.txt",
 			"a/b/f3.txt",
+			"a/f2.txt",
+			"f1.txt",
 		},
 		{
-			"b/f1.txt",
 			"b/c/f2.txt",
+			"b/f1.txt",
 		},
 	}
 

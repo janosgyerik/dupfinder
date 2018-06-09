@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"sort"
 )
 
 type Tracker interface {
@@ -80,6 +81,18 @@ func (t *tracker) Add(path string) {
 	t.indexBySize[item.size] = append(t.indexBySize[item.size], group)
 }
 
+type byPath []string
+
+func (a byPath) Len() int           { return len(a) }
+func (a byPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byPath) Less(i, j int) bool { return a[i] < a[j] }
+
+type byFirstPath [][]string
+
+func (a byFirstPath) Len() int           { return len(a) }
+func (a byFirstPath) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byFirstPath) Less(i, j int) bool { return a[i][0] < a[j][0] }
+
 func (t *tracker) Dups() [][]string {
 	dups := make([][]string, 0)
 	for _, g := range t.groups {
@@ -88,9 +101,11 @@ func (t *tracker) Dups() [][]string {
 			for _, item := range g.items {
 				paths = append(paths, item.path)
 			}
+			sort.Sort(byPath(paths))
 			dups = append(dups, paths)
 		}
 	}
+	sort.Sort(byFirstPath(dups))
 	return dups
 }
 
