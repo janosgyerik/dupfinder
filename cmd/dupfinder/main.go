@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 	"fmt"
-	"github.com/janosgyerik/dupfinder/finder"
 	"github.com/janosgyerik/dupfinder/pathreader"
 	"github.com/janosgyerik/dupfinder"
+	"github.com/janosgyerik/dupfinder/finder"
 )
 
 var verbose bool
@@ -38,7 +38,7 @@ func parseArgs() Params {
 	} else if *stdinPtr {
 		paths = pathreader.FromLines(os.Stdin)
 	} else if len(flag.Args()) > 0 {
-		paths = finder.NewFinder().Find(flag.Args()[0])
+		paths = findInAll(flag.Args())
 	} else {
 		exit()
 	}
@@ -48,6 +48,22 @@ func parseArgs() Params {
 		minSize: *minSizePtr,
 		verbose: !*silentPtr,
 	}
+}
+
+func findInAll(args []string) <-chan string {
+	filefinder := finder.NewFinder()
+
+	agg := make(chan string)
+	go func() {
+		for _, path := range args {
+			for msg := range filefinder.Find(path) {
+				agg <- msg
+			}
+		}
+		close(agg)
+	}()
+
+	return agg
 }
 
 func printLine(args ...interface{}) {
