@@ -12,8 +12,8 @@ type Item interface {
 
 type Group interface {
 	Items() []Item
-	Accepts(Item) bool
-	Add(Item)
+	accepts(Item) bool
+	add(Item)
 }
 
 type Tracker interface {
@@ -35,8 +35,8 @@ func (t *tracker) Add(item Item) {
 	candidates := t.filter.CandidateGroups(item)
 
 	for _, g := range candidates {
-		if g.Accepts(item) {
-			g.Add(item)
+		if g.accepts(item) {
+			g.add(item)
 			return
 		}
 	}
@@ -60,29 +60,29 @@ func NewTracker(filter Filter) Tracker {
 	return &tracker{filter: filter}
 }
 
-type defaultGroup struct {
+type group struct {
 	items []Item
 }
 
-func (g *defaultGroup) Items() []Item {
+func (g *group) Items() []Item {
 	return g.items
 }
 
-func (g *defaultGroup) Add(item Item) {
+func (g *group) add(item Item) {
 	g.items = append(g.items, item)
 }
 
-func (g *defaultGroup) Accepts(item Item) bool {
+func (g *group) accepts(item Item) bool {
 	return g.items[0].Equals(item)
 }
 
-func (g *defaultGroup) String() string {
+func (g *group) String() string {
 	return fmt.Sprintf("%v", g.items)
 }
 
 func newGroup(item Item) Group {
-	g := &defaultGroup{}
-	g.Add(item)
+	g := &group{}
+	g.add(item)
 	return g
 }
 
