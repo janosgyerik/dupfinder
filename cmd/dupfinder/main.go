@@ -28,7 +28,7 @@ func parseArgs() Params {
 	minSizePtr := flag.Int64("minSize", 1, "minimum file size")
 	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
-	verbosePtr := flag.Bool("verbose", false, "verbose mode, print stats on stderr")
+	silentPtr := flag.Bool("silent", false, "silent mode, do not print stats on stderr")
 
 	flag.Parse()
 
@@ -46,7 +46,7 @@ func parseArgs() Params {
 	return Params{
 		paths:   paths,
 		minSize: *minSizePtr,
-		verbose: *verbosePtr,
+		verbose: !*silentPtr,
 	}
 }
 
