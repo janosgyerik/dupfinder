@@ -12,7 +12,7 @@ func yes(string) bool {
 	return true
 }
 
-func Test_readItems(t*testing.T) {
+func Test_readItems(t *testing.T) {
 	data := []struct {
 		input string
 		lines []string
@@ -26,20 +26,19 @@ func Test_readItems(t*testing.T) {
 
 	for _, item := range data {
 		expected := item.lines
-		actual := readItemsFromLines(strings.NewReader(item.input), yes)
+		actual := toString(readItemsFromLines(strings.NewReader(item.input), yes))
 		if !reflect.DeepEqual(expected, actual) {
 			t.Errorf("got %#v, expected %#v", actual, expected)
 		}
 
 		input2 := strings.Replace(item.input, "\n", "\000", -1)
-		actual2 := readItemsFromNullDelimited(strings.NewReader(input2), yes)
+		actual2 := toString(readItemsFromNullDelimited(strings.NewReader(input2), yes))
 		if !reflect.DeepEqual(expected, actual2) {
 			t.Errorf("got %#v, expected %#v", actual2, expected)
 		}
 	}
 }
-
-func Test_ReadFilePaths_filters_nonfiles(t*testing.T) {
+func Test_ReadFilePaths_filters_nonfiles(t *testing.T) {
 	file, err := ioutil.TempFile("", "test")
 	if err != nil {
 		t.Fatal(err)
@@ -62,46 +61,23 @@ func Test_ReadFilePaths_filters_nonfiles(t*testing.T) {
 
 	for _, item := range data {
 		expected := item.lines
-		actual := ReadFilePathsFromLines(strings.NewReader(item.input))
+		actual := toString(FromLines(strings.NewReader(item.input)))
 		if !reflect.DeepEqual(expected, actual) {
 			t.Errorf("got %#v, expected %#v", actual, expected)
 		}
 
 		input2 := strings.Replace(item.input, "\n", "\000", -1)
-		actual2 := ReadFilePathsFromNullDelimited(strings.NewReader(input2))
+		actual2 := toString(FromNullDelimited(strings.NewReader(input2)))
 		if !reflect.DeepEqual(expected, actual2) {
 			t.Errorf("got %#v, expected %#v", actual2, expected)
 		}
 	}
 }
 
-func Test_FilterPaths(t*testing.T) {
-	file, err := ioutil.TempFile("", "test")
-	if err != nil {
-		t.Fatal(err)
+func toString(c <-chan string) interface{} {
+	lines := make([]string, 0)
+	for line := range c {
+		lines = append(lines, line)
 	}
-	defer os.Remove(file.Name())
-
-	data := []struct {
-		input string
-		paths []string
-	}{
-		{"", []string{}},
-		{".\nnonexistent", []string{}},
-		{".\n.", []string{}},
-		{".\n.\n/", []string{}},
-		{".\n/\n//", []string{}},
-		{".\n//\n/", []string{}},
-		{".\n\n.\n.\n/\n/", []string{}},
-		{"\n\n\n" + file.Name() + "\n\n\n", []string{file.Name()}},
-		{"\n" + file.Name() + "\n" + file.Name() + "\n", []string{file.Name()}},
-	}
-
-	for _, item := range data {
-		expected := item.paths
-		actual := FilterPaths(strings.Split(item.input, "\n"))
-		if !reflect.DeepEqual(expected, actual) {
-			t.Errorf("got %#v, expected %#v", actual, expected)
-		}
-	}
+	return lines
 }

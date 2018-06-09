@@ -11,14 +11,14 @@ const testDataDir = "testdata"
 var basedir = testDataDir
 
 func findPaths(finder Finder) []string {
-	paths := []string{}
+	var paths []string
 	for path := range finder.Find(basedir) {
 		paths = append(paths, path)
 	}
 	return paths
 }
 
-func Test_should_find_all_files_and_only_files(t*testing.T) {
+func Test_should_find_all_files_and_only_files(t *testing.T) {
 	finder := NewFinder()
 	paths := findPaths(finder)
 
@@ -30,7 +30,7 @@ func Test_should_find_all_files_and_only_files(t*testing.T) {
 	assertPathsAreFiles(t, paths...)
 }
 
-func Test_should_find_size30_for_MinSize30(t*testing.T) {
+func Test_should_find_size30_for_MinSize30(t *testing.T) {
 	finder := NewFinder(Filters.MinSize(30))
 	paths := findPaths(finder)
 
@@ -41,7 +41,7 @@ func Test_should_find_size30_for_MinSize30(t*testing.T) {
 	assertPathsAreFiles(t, paths...)
 }
 
-func assertPathsAreFiles(t*testing.T, paths... string) {
+func assertPathsAreFiles(t *testing.T, paths ... string) {
 	for _, path := range paths {
 		info, err := os.Stat(path)
 		if err != nil {
@@ -52,7 +52,7 @@ func assertPathsAreFiles(t*testing.T, paths... string) {
 	}
 }
 
-func Test_assertPathsAreFiles_should_pass_for_files(t*testing.T) {
+func Test_assertPathsAreFiles_should_pass_for_files(t *testing.T) {
 	t2 := &testing.T{}
 	assertPathsAreFiles(t2, filepath.Join(basedir, "size30.txt"))
 	if t2.Failed() {
@@ -60,7 +60,7 @@ func Test_assertPathsAreFiles_should_pass_for_files(t*testing.T) {
 	}
 }
 
-func Test_assertPathsAreFiles_should_fail_for_dirs(t*testing.T) {
+func Test_assertPathsAreFiles_should_fail_for_dirs(t *testing.T) {
 	t2 := &testing.T{}
 	assertPathsAreFiles(t2, ".")
 	if !t2.Failed() {
@@ -68,7 +68,7 @@ func Test_assertPathsAreFiles_should_fail_for_dirs(t*testing.T) {
 	}
 }
 
-func Test_assertPathsAreFiles_should_fail_for_non_existent_paths(t*testing.T) {
+func Test_assertPathsAreFiles_should_fail_for_non_existent_paths(t *testing.T) {
 	t2 := &testing.T{}
 	assertPathsAreFiles(t2, "nonexistent")
 	if !t2.Failed() {

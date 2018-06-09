@@ -17,7 +17,7 @@ func exit() {
 }
 
 type Params struct {
-	paths   []string
+	paths   <-chan string
 	minSize int64
 	stdin   bool
 	stdin0  bool
@@ -32,16 +32,14 @@ func parseArgs() Params {
 
 	flag.Parse()
 
-	var paths []string
+	var paths <-chan string
 	if *zeroPtr {
-		paths = pathreader.ReadFilePathsFromNullDelimited(os.Stdin)
+		paths = pathreader.FromNullDelimited(os.Stdin)
 	} else if *stdinPtr {
-		paths = pathreader.ReadFilePathsFromLines(os.Stdin)
+		paths = pathreader.FromLines(os.Stdin)
+	} else if len(flag.Args()) > 0 {
+		paths = finder.NewFinder().Find(flag.Args()[0])
 	} else {
-		paths = pathreader.FilterPaths(flag.Args())
-	}
-
-	if len(paths) == 0 {
 		exit()
 	}
 
@@ -88,28 +86,27 @@ func main() {
 
 	verbose = params.verbose
 
-	filefinder := finder.NewFinder(finder.Filters.MinSize(params.minSize))
-
 	printLine("Collecting paths to check ...")
 
 	var paths []string
-	for _, path := range params.paths {
-		paths = append(paths, filefinder.FindAll(path)...)
+	i := 1
+	for path := range params.paths {
+		paths = append(paths, path)
+		status("Found: %d", i)
+		i += 1
 	}
-
-	printLine("Files:", len(paths))
+	printLine()
 
 	tracker := dupfinder.NewTracker()
 	logger := eventLogger{}
 	tracker.SetLogger(&logger)
 
-	i := 1
+	i = 1
 	for _, path := range paths {
 		tracker.Add(path)
-		status("Processing %d / %d", i, len(paths))
+		status("Processing: %d / %d", i, len(paths))
 		i += 1
 	}
-
 	printLine()
 
 	for _, group := range tracker.Dups() {
@@ -121,4 +118,5 @@ func main() {
 	}
 
 	printLine("Total bytes read:", logger.bytesRead)
+	printLine("Total files processed:", len(paths))
 }

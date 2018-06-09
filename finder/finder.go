@@ -24,7 +24,7 @@ func (filter minSizeFilter) Accept(path string, info os.FileInfo) bool {
 
 var Filters = struct {
 	MinSize func(size int64) Filter
-} {
+}{
 	MinSize: func(size int64) Filter { return minSizeFilter{size} },
 }
 
@@ -53,13 +53,13 @@ func (finder defaultFinder) Find(basedir string) <-chan string {
 }
 
 func (finder defaultFinder) FindAll(basedir string) []string {
-	paths := []string{}
+	var paths []string
 	for path := range finder.Find(basedir) {
 		paths = append(paths, path)
 	}
 	return paths
 }
 
-func NewFinder(filters... Filter) Finder {
+func NewFinder(filters ... Filter) Finder {
 	return defaultFinder{filters: filters}
 }
