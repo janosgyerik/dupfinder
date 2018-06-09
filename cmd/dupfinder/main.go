@@ -3,13 +3,15 @@ package main
 import (
 	"flag"
 	"os"
-	"fmt"
 	"github.com/janosgyerik/dupfinder/pathreader"
-	"github.com/janosgyerik/dupfinder"
 	"github.com/janosgyerik/dupfinder/finder"
+	"fmt"
+	"github.com/janosgyerik/dupfinder"
 )
 
 var verbose bool
+
+const defaultExclude = `^\.(DS_Store|git)$`
 
 func exit() {
 	flag.Usage()
@@ -23,6 +25,7 @@ type Params struct {
 	stdin0  bool
 	verbose bool
 	include []string
+	exclude []string
 }
 
 func parseArgs() Params {
@@ -31,6 +34,7 @@ func parseArgs() Params {
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
 	silentPtr := flag.Bool("silent", false, "silent mode, do not print stats on stderr")
 	includePtr := flag.String("include", ".", "include file paths that match regex")
+	excludePtr := flag.String("exclude", defaultExclude, "exclude file paths that match regex")
 
 	flag.Parse()
 
@@ -43,6 +47,7 @@ func parseArgs() Params {
 		filters := []finder.Filter{
 			finder.Filters.MinSize(*minSizePtr),
 			finder.Filters.IncludeRegex(*includePtr),
+			finder.Filters.ExcludeRegex(*excludePtr),
 		}
 		filefinder := finder.NewFinder(filters...)
 		paths = findInAll(filefinder, flag.Args())

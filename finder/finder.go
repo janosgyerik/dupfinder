@@ -24,23 +24,26 @@ func (filter minSizeFilter) Accept(path string, info os.FileInfo) bool {
 }
 
 type regexFilter struct {
-	regex *regexp.Regexp
+	regex    *regexp.Regexp
+	negative bool
 }
 
-func newRegexFilter(regex string) regexFilter {
-	return regexFilter{regexp.MustCompile(regex)}
+func newRegexFilter(regex string, negative bool) regexFilter {
+	return regexFilter{regexp.MustCompile(regex), negative}
 }
 
 func (filter regexFilter) Accept(path string, info os.FileInfo) bool {
-	return filter.regex.MatchString(path)
+	return filter.negative != filter.regex.MatchString(path)
 }
 
 var Filters = struct {
 	MinSize      func(size int64) Filter
 	IncludeRegex func(pattern string) Filter
+	ExcludeRegex func(pattern string) Filter
 }{
 	MinSize:      func(size int64) Filter { return minSizeFilter{size} },
-	IncludeRegex: func(regex string) Filter { return newRegexFilter(regex) },
+	IncludeRegex: func(regex string) Filter { return newRegexFilter(regex, false) },
+	ExcludeRegex: func(regex string) Filter { return newRegexFilter(regex, true) },
 }
 
 type defaultFinder struct {
