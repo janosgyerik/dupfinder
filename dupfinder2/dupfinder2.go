@@ -26,12 +26,12 @@ type Filter interface {
 	Register(Item, Group)
 }
 
-type defaultTracker struct {
+type tracker struct {
 	groups []Group
 	filter Filter
 }
 
-func (t *defaultTracker) Add(item Item) {
+func (t *tracker) Add(item Item) {
 	candidates := t.filter.CandidateGroups(item)
 
 	for _, g := range candidates {
@@ -46,7 +46,7 @@ func (t *defaultTracker) Add(item Item) {
 	t.filter.Register(item, group)
 }
 
-func (t *defaultTracker) Dups() []Group {
+func (t *tracker) Dups() []Group {
 	dups := make([]Group, 0)
 	for _, g := range t.groups {
 		if len(g.Items()) > 1 {
@@ -57,7 +57,7 @@ func (t *defaultTracker) Dups() []Group {
 }
 
 func NewTracker(filter Filter) Tracker {
-	return &defaultTracker{filter: filter}
+	return &tracker{filter: filter}
 }
 
 type defaultGroup struct {
