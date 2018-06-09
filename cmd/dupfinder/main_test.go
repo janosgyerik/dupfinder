@@ -86,7 +86,7 @@ func normalize(out string) [][]string {
 				result = append(result, current)
 			}
 			current = make([]string, 0)
-		} else {
+		} else if p[0] != '#' {
 			current = append(current, p[len(tempdir)+1:])
 		}
 	}
