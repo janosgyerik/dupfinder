@@ -22,6 +22,7 @@ type Params struct {
 	stdin   bool
 	stdin0  bool
 	verbose bool
+	include []string
 }
 
 func parseArgs() Params {
@@ -29,6 +30,7 @@ func parseArgs() Params {
 	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
 	silentPtr := flag.Bool("silent", false, "silent mode, do not print stats on stderr")
+	includePtr := flag.String("include", ".", "include file paths that match regex")
 
 	flag.Parse()
 
@@ -38,7 +40,12 @@ func parseArgs() Params {
 	} else if *stdinPtr {
 		paths = pathreader.FromLines(os.Stdin)
 	} else if len(flag.Args()) > 0 {
-		paths = findInAll(flag.Args())
+		filters := []finder.Filter{
+			finder.Filters.MinSize(*minSizePtr),
+			finder.Filters.IncludeRegex(*includePtr),
+		}
+		filefinder := finder.NewFinder(filters...)
+		paths = findInAll(filefinder, flag.Args())
 	} else {
 		exit()
 	}
@@ -50,13 +57,11 @@ func parseArgs() Params {
 	}
 }
 
-func findInAll(args []string) <-chan string {
-	filefinder := finder.NewFinder()
-
+func findInAll(f finder.Finder, args []string) <-chan string {
 	agg := make(chan string)
 	go func() {
 		for _, path := range args {
-			for msg := range filefinder.Find(path) {
+			for msg := range f.Find(path) {
 				agg <- msg
 			}
 		}

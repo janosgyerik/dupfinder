@@ -3,6 +3,7 @@ package finder
 import (
 	"path/filepath"
 	"os"
+	"regexp"
 )
 
 type Finder interface {
@@ -15,17 +16,31 @@ type Filter interface {
 }
 
 type minSizeFilter struct {
-	Size int64
+	size int64
 }
 
 func (filter minSizeFilter) Accept(path string, info os.FileInfo) bool {
-	return info.Size() >= filter.Size
+	return info.Size() >= filter.size
+}
+
+type regexFilter struct {
+	regex *regexp.Regexp
+}
+
+func newRegexFilter(regex string) regexFilter {
+	return regexFilter{regexp.MustCompile(regex)}
+}
+
+func (filter regexFilter) Accept(path string, info os.FileInfo) bool {
+	return filter.regex.MatchString(path)
 }
 
 var Filters = struct {
-	MinSize func(size int64) Filter
+	MinSize      func(size int64) Filter
+	IncludeRegex func(pattern string) Filter
 }{
-	MinSize: func(size int64) Filter { return minSizeFilter{size} },
+	MinSize:      func(size int64) Filter { return minSizeFilter{size} },
+	IncludeRegex: func(regex string) Filter { return newRegexFilter(regex) },
 }
 
 type defaultFinder struct {
