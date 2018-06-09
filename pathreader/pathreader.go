@@ -39,19 +39,19 @@ func newUniqueFilter() filter {
 	}
 }
 
-func isFile(s string) bool {
-	fi, err := os.Stat(s)
+func isFileOrDir(s string) bool {
+	_, err := os.Stat(s)
 	if err != nil {
 		return false
 	}
-	return fi.Mode().IsRegular()
+	return true
 }
 
 func newDefaultFilter() filter {
 	isUnique := newUniqueFilter()
 
 	return func(s string) bool {
-		return isFile(s) && isUnique(s)
+		return isFileOrDir(s) && isUnique(s)
 	}
 }
 
