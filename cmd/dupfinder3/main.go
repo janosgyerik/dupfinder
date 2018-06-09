@@ -66,15 +66,21 @@ func status(first string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\r"+first, args...)
 }
 
-type logger struct{}
+type eventLogger struct {
+	bytesRead int64
+}
 
-func (log *logger) NewDuplicate(items []*dupfinder3.FileItem, item *dupfinder3.FileItem) {
+func (log *eventLogger) NewDuplicate(items []*dupfinder3.FileItem, item *dupfinder3.FileItem) {
 	printLine()
 	for _, oldItem := range items {
 		printLine(oldItem.Path)
 	}
 	printLine("->", item.Path, item.Size)
 	printLine()
+}
+
+func (log *eventLogger) BytesRead(count int) {
+	log.bytesRead += int64(count)
 }
 
 func main() {
@@ -94,7 +100,8 @@ func main() {
 	printLine("Files:", len(paths))
 
 	tracker := dupfinder3.NewTracker()
-	tracker.SetLogger(&logger{})
+	logger := eventLogger{}
+	tracker.SetLogger(&logger)
 
 	i := 1
 	for _, path := range paths {
@@ -112,4 +119,6 @@ func main() {
 		}
 		fmt.Println()
 	}
+
+	printLine("Total bytes read:", logger.bytesRead)
 }

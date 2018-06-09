@@ -32,7 +32,8 @@ func newFileItem(path string) *FileItem {
 }
 
 type group struct {
-	items []*FileItem
+	items   []*FileItem
+	tracker *tracker
 }
 
 func (g *group) add(item *FileItem) {
@@ -53,6 +54,8 @@ func (g *group) fits(item *FileItem) bool {
 		panic("could not read file: " + p2)
 	}
 
+	g.tracker.logger.BytesRead(len(s1) * 2)
+
 	return reflect.DeepEqual(s1, s2)
 }
 
@@ -60,19 +63,22 @@ func (g *group) String() string {
 	return fmt.Sprintf("%v", g.items)
 }
 
-func newGroup(item *FileItem) *group {
-	g := &group{}
+func newGroup(t *tracker, item *FileItem) *group {
+	g := &group{tracker: t}
 	g.add(item)
 	return g
 }
 
 type Logger interface {
 	NewDuplicate([]*FileItem, *FileItem)
+	BytesRead(count int)
 }
 
 type nullLogger struct{}
 
 func (logger *nullLogger) NewDuplicate([]*FileItem, *FileItem) {}
+
+func (logger *nullLogger) BytesRead(int) {}
 
 type tracker struct {
 	groups      []*group
@@ -91,7 +97,7 @@ func (t *tracker) Add(path string) {
 		}
 	}
 
-	group := newGroup(item)
+	group := newGroup(t, item)
 	t.groups = append(t.groups, group)
 	t.indexBySize[item.Size] = append(t.indexBySize[item.Size], group)
 }
