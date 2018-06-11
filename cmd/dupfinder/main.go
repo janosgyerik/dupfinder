@@ -7,6 +7,7 @@ import (
 	"github.com/janosgyerik/dupfinder/finder"
 	"fmt"
 	"github.com/janosgyerik/dupfinder"
+	"strconv"
 )
 
 var verbose bool
@@ -29,7 +30,7 @@ type Params struct {
 }
 
 func parseArgs() Params {
-	minSizePtr := flag.Int64("minSize", 1024*1024*100, "minimum file size")
+	minSizePtr := flag.String("minSize", "100m", "minimum file size")
 	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
 	silentPtr := flag.Bool("silent", false, "silent mode, do not print stats on stderr")
@@ -38,6 +39,8 @@ func parseArgs() Params {
 
 	flag.Parse()
 
+	minSize := toByteCount(*minSizePtr)
+
 	var paths <-chan string
 	if *zeroPtr {
 		paths = pathreader.FromNullDelimited(os.Stdin)
@@ -45,7 +48,7 @@ func parseArgs() Params {
 		paths = pathreader.FromLines(os.Stdin)
 	} else if len(flag.Args()) > 0 {
 		filters := []finder.Filter{
-			finder.Filters.MinSize(*minSizePtr),
+			finder.Filters.MinSize(minSize),
 			finder.Filters.IncludeRegex(*includePtr),
 			finder.Filters.ExcludeRegex(*excludePtr),
 		}
@@ -57,8 +60,48 @@ func parseArgs() Params {
 
 	return Params{
 		paths:   paths,
-		minSize: *minSizePtr,
+		minSize: minSize,
 		verbose: !*silentPtr,
+	}
+}
+
+func toByteCount(s string) int64 {
+	numPart := s[0 : len(s)-1]
+	unitPart := s[len(s)-1]
+
+	var multiplier int64 = 1
+
+	switch unitPart {
+	case 'c':
+		multiplier = 1
+	case 'k':
+		fallthrough
+	case 'K':
+		multiplier = 1<<10
+	case 'm':
+		fallthrough
+	case 'M':
+		multiplier = 1<<20
+	case 'g':
+		fallthrough
+	case 'G':
+		multiplier = 1<<30
+	case 't':
+		fallthrough
+	case 'T':
+		multiplier = 1<<40
+	default:
+		numPart = s
+	}
+
+	v, err := strconv.Atoi(numPart)
+	check(err)
+	return int64(v) * multiplier
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
 	}
 }
 

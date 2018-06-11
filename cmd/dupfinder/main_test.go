@@ -93,12 +93,6 @@ func normalize(out string) [][]string {
 	return result
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func createTempFiles(data []fileData) {
 	var err error
 	tempdir, err = ioutil.TempDir("", "test")
@@ -119,7 +113,32 @@ func deleteTempFiles() {
 }
 
 func run() string {
-	out, err := exec.Command("go", "run", "main.go", tempdir).Output()
+	out, err := exec.Command("go", "run", "main.go", "-minSize", "1", tempdir).Output()
 	check(err)
 	return string(out)
+}
+
+func Test_toByteCount(t *testing.T) {
+	data := []struct {
+		input string
+		count int64
+	} {
+		{"1", 1},
+		{"1c", 1},
+		{"5", 5},
+		{"5c", 5},
+		{"1k", 1024},
+		{"1K", 1024},
+		{"1m", 1024 * 1024},
+		{"1M", 1024 * 1024},
+		{"1g", 1024 * 1024 * 1024},
+		{"1G", 1024 * 1024 * 1024},
+		{"1t", 1024 * 1024 * 1024 * 1024},
+		{"1T", 1024 * 1024 * 1024 * 1024},
+	}
+	for _, x := range data {
+		if v := toByteCount(x.input); v != x.count {
+			t.Errorf("got %d; expected %d", v, x.count)
+		}
+	}
 }
