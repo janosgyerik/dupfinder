@@ -29,7 +29,7 @@ type Params struct {
 }
 
 func parseArgs() Params {
-	minSizePtr := flag.Int64("minSize", 1, "minimum file size")
+	minSizePtr := flag.Int64("minSize", 1024*1024*100, "minimum file size")
 	stdinPtr := flag.Bool("stdin", false, "read paths from stdin")
 	zeroPtr := flag.Bool("0", false, "read paths from stdin, null-delimited")
 	silentPtr := flag.Bool("silent", false, "silent mode, do not print stats on stderr")
