@@ -12,6 +12,14 @@ func FileSize(path string) int64 {
 	return fileInfo.Size()
 }
 
+func IsFile(s string) bool {
+	stat, err := os.Lstat(s)
+	if err != nil {
+		return false
+	}
+	return stat.Mode().IsRegular()
+}
+
 type PathFilter func(string) bool
 
 func newUniqueFilter() PathFilter {
@@ -26,18 +34,10 @@ func newUniqueFilter() PathFilter {
 	}
 }
 
-func isFile(s string) bool {
-	stat, err := os.Lstat(s)
-	if err != nil {
-		return false
-	}
-	return stat.Mode().IsRegular()
-}
-
 func NewDefaultFilter() PathFilter {
 	isUnique := newUniqueFilter()
 
 	return func(s string) bool {
-		return isFile(s) && isUnique(s)
+		return isUnique(s)
 	}
 }

@@ -162,7 +162,12 @@ func main() {
 	var paths []string
 	i := 1
 	for path := range params.paths {
+		if !utils.IsFile(path) {
+			continue
+		}
+
 		normalized := filepath.Clean(path)
+
 		if !filter(normalized) {
 			continue
 		}

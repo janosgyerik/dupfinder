@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
+	"testing"
+	"path/filepath"
 )
 
 func TestFileSize(t *testing.T) {
@@ -40,5 +41,42 @@ func newTempFile(size int64) string {
 func check(e error) {
 	if e != nil {
 		panic(e)
+	}
+}
+
+func TestIsFile(t *testing.T) {
+	tempdir, err := ioutil.TempDir("", "test")
+	check(err)
+
+	defer os.RemoveAll(tempdir)
+
+	file := filepath.Join(tempdir, "file")
+	ioutil.WriteFile(file, []byte("foo"), 0644)
+
+	linkToFile := filepath.Join(tempdir, "link-to-file")
+	os.Symlink("file", linkToFile)
+
+	dir := filepath.Join(tempdir, "dir")
+	os.Mkdir(dir, 0755)
+
+	linkToDir := filepath.Join(tempdir, "link-to-dir")
+	os.Symlink("dir", linkToDir)
+
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"file", file, true},
+		{"symlink to file", linkToFile, false},
+		{"dir", dir,false},
+		{"symlink to dir", linkToDir, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsFile(tt.path); got != tt.want {
+				t.Errorf("IsFile() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
