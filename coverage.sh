@@ -1,16 +1,29 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 cd "$(dirname "$0")"
-mkdir -p tmp
 
-rm -f tmp/cover-*.out
-for package in . ./finder ./pathreader; do
-    name=$(cd "$package"; basename "$PWD")
-    go test $package -coverprofile tmp/cover-$name.out
-done
+coverdir=$PWD/tmp
+
+mkdir -p "$coverdir"
+rm -f "$coverdir"/cover-*.out
+
+cover() {
+    local dir=$1
+    local package=$2
+    local name=$3
+    (cd "$dir" && go test $package -coverprofile "$coverdir"/cover-$name.out)
+}
+
+cover . . dupfinder
+cover . ./finder finder
+cover . ./pathreader pathreader
+cover cmd/dupfinder '' cmd
 
 {
     echo "mode: set"
     grep -hv ^mode: tmp/cover-*.out
-} > tmp/cover.out
-go tool cover -html=tmp/cover.out -o tmp/cover.html
+} > "$coverdir/cover.out"
+
+go tool cover -html="$coverdir/cover.out" -o "$coverdir/cover.html"

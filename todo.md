@@ -7,7 +7,6 @@
 ### polishing
 
 - get the pools more directly in `dupTracker.getDupGroups`, without the ugly delete
-- Get `main_test.go`'s result included in report
 - Eliminate code duplication in test of library and test of main
 - maximum reasonable test coverage
 - document public types and functions
