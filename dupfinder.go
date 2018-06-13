@@ -95,13 +95,13 @@ func newGroup(t *tracker, item *FileItem) *group {
 }
 
 type Logger interface {
-	NewDuplicate([]*FileItem, *FileItem)
+	NewDuplicate([]*FileItem)
 	BytesRead(count int)
 }
 
 type nullLogger struct{}
 
-func (logger *nullLogger) NewDuplicate([]*FileItem, *FileItem) {}
+func (logger *nullLogger) NewDuplicate([]*FileItem) {}
 
 func (logger *nullLogger) BytesRead(int) {}
 
@@ -116,8 +116,8 @@ func (t *tracker) Add(path string) {
 
 	for _, g := range t.indexBySize[item.Size] {
 		if g.fits(item) {
-			t.logger.NewDuplicate(g.items, item)
 			g.add(item)
+			t.logger.NewDuplicate(g.items)
 			return
 		}
 	}
