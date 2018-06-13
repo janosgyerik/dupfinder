@@ -3,44 +3,37 @@ dupfinder
 
 Find duplicate files in specified directory trees.
 
-TODO: not actually implemented yet
-
 [![GoDoc](https://godoc.org/github.com/janosgyerik/dupfinder?status.svg)](https://godoc.org/github.com/janosgyerik/dupfinder)
 [![Build Status](https://travis-ci.org/janosgyerik/dupfinder.svg?branch=master)](https://travis-ci.org/janosgyerik/dupfinder)
 
 Usage
 -----
 
-To find duplicate files in the current directory and all sub-directories:
+Find duplicate files in some directory tree:
 
-    find . -type f | dupfinder
+    dupfinder path/to/dir
 
-See `dupfinder -h` for all available options.
+Some basic filtering options are available. See `dupfinder -h` for options.
+
+For maximum control, you can use the `find` command to filter files to include,
+and pass the list of files to stdin of `dupfinder -0`, for example:
+
+    find . -type f -print0 | dupfinder -0
 
 To find duplicate files in multiple directory trees,
 only considering filenames with extension `.avi`,
 descending to at most 2 sub-directory levels:
 
-    find path/to/dir path/to/other/dir -name '*.avi' -maxdepth 2 | dupfinder 
+    find path/to/dir path/to/other/dir -name '*.avi' -maxdepth 2 | dupfinder -0 
 
 Download
 --------
 
-TODO: not actually implemented yet
+Binaries for several platforms are available in GitHub releases:
 
-Binaries for several platforms are available on SourceForge:
-
-https://sourceforge.net/projects/dupfinder/files/
+https://github.com/janosgyerik/dupfinder/releases
 
 Generate test coverage report
 -----------------------------
 
-Run the commands:
-
-    go test -coverprofile cover.out
-    go tool cover -html=cover.out -o cover.html
-    open cover.html
-    
-Or simply run the `./coverage.sh` helper script.
-
-See more info: https://blog.golang.org/cover
+Run the `./coverage.sh` helper script.
