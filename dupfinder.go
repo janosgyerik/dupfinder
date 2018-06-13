@@ -14,7 +14,7 @@ const chunkSize = 4096
 type Tracker interface {
 	Add(path string)
 	Dups() [][]string
-	SetLogger(Logger)
+	SetEventListener(EventListener)
 }
 
 type fileItem struct {
@@ -70,7 +70,7 @@ func (g *group) fits(item *fileItem) bool {
 		n1, err1 := f1.Read(buf1)
 		n2, err2 := f2.Read(buf2)
 
-		g.tracker.logger.BytesRead(n1 + n2)
+		g.tracker.eventListener.BytesRead(n1 + n2)
 
 		if n1 != n2 {
 			return false
@@ -96,21 +96,21 @@ func newGroup(t *tracker, item *fileItem) *group {
 	return g
 }
 
-type Logger interface {
+type EventListener interface {
 	NewDuplicate([]string)
 	BytesRead(count int)
 }
 
-type nullLogger struct{}
+type nullEventListener struct{}
 
-func (logger *nullLogger) NewDuplicate([]string) {}
+func (eventListener *nullEventListener) NewDuplicate([]string) {}
 
-func (logger *nullLogger) BytesRead(int) {}
+func (eventListener *nullEventListener) BytesRead(int) {}
 
 type tracker struct {
-	groups      []*group
-	indexBySize map[int64][]*group
-	logger      Logger
+	groups        []*group
+	indexBySize   map[int64][]*group
+	eventListener EventListener
 }
 
 func (t *tracker) Add(path string) {
@@ -119,7 +119,7 @@ func (t *tracker) Add(path string) {
 	for _, g := range t.indexBySize[item.size] {
 		if g.fits(item) {
 			g.add(item)
-			t.logger.NewDuplicate(g.paths)
+			t.eventListener.NewDuplicate(g.paths)
 			return
 		}
 	}
@@ -167,14 +167,14 @@ func (t *tracker) Dups() [][]string {
 	return dups
 }
 
-func (t *tracker) SetLogger(logger Logger) {
-	t.logger = logger
+func (t *tracker) SetEventListener(eventListener EventListener) {
+	t.eventListener = eventListener
 }
 
 func NewTracker() Tracker {
 	t := &tracker{}
 	t.indexBySize = make(map[int64][]*group)
-	t.logger = &nullLogger{}
+	t.eventListener = &nullEventListener{}
 	return t
 }
 

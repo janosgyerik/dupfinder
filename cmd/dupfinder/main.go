@@ -133,11 +133,11 @@ func status(first string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\r"+first, args...)
 }
 
-type eventLogger struct {
+type eventListener struct {
 	bytesRead int64
 }
 
-func (log *eventLogger) NewDuplicate(paths []string) {
+func (log *eventListener) NewDuplicate(paths []string) {
 	printLine()
 	for _, path := range paths {
 		printLine(path)
@@ -145,7 +145,7 @@ func (log *eventLogger) NewDuplicate(paths []string) {
 	printLine()
 }
 
-func (log *eventLogger) BytesRead(count int) {
+func (log *eventListener) BytesRead(count int) {
 	log.bytesRead += int64(count)
 }
 
@@ -171,8 +171,8 @@ func main() {
 	printLine()
 
 	tracker := dupfinder.NewTracker()
-	logger := eventLogger{}
-	tracker.SetLogger(&logger)
+	eventListener := eventListener{}
+	tracker.SetEventListener(&eventListener)
 
 	i = 1
 	for _, path := range paths {
@@ -190,6 +190,6 @@ func main() {
 		fmt.Println()
 	}
 
-	printLine("Total bytes read:", logger.bytesRead)
+	printLine("Total bytes read:", eventListener.bytesRead)
 	printLine("Total files processed:", len(paths))
 }
