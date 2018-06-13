@@ -38,14 +38,6 @@ func readItems(reader io.Reader, splitter bufio.SplitFunc) <-chan string {
 	return items
 }
 
-func readItemsFromLines(reader io.Reader) <-chan string {
-	return readItems(reader, bufio.ScanLines)
-}
-
-func readItemsFromNullDelimited(reader io.Reader) <-chan string {
-	return readItems(reader, scanNullDelimited)
-}
-
 func readFilePaths(reader io.Reader, splitter bufio.SplitFunc) <-chan string {
 	return readItems(reader, splitter)
 }

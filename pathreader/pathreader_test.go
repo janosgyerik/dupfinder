@@ -20,13 +20,13 @@ func Test_readItems(t *testing.T) {
 
 	for _, item := range data {
 		expected := item.lines
-		actual := toString(readItemsFromLines(strings.NewReader(item.input)))
+		actual := toString(FromLines(strings.NewReader(item.input)))
 		if !reflect.DeepEqual(expected, actual) {
 			t.Errorf("got %#v, expected %#v", actual, expected)
 		}
 
 		input2 := strings.Replace(item.input, "\n", "\000", -1)
-		actual2 := toString(readItemsFromNullDelimited(strings.NewReader(input2)))
+		actual2 := toString(FromNullDelimited(strings.NewReader(input2)))
 		if !reflect.DeepEqual(expected, actual2) {
 			t.Errorf("got %#v, expected %#v", actual2, expected)
 		}
