@@ -137,10 +137,10 @@ type eventLogger struct {
 	bytesRead int64
 }
 
-func (log *eventLogger) NewDuplicate(items []*dupfinder.FileItem) {
+func (log *eventLogger) NewDuplicate(paths []string) {
 	printLine()
-	for _, oldItem := range items {
-		printLine(oldItem.Path)
+	for _, path := range paths {
+		printLine(path)
 	}
 	printLine()
 }
