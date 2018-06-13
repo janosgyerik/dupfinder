@@ -3,75 +3,144 @@ package finder
 import (
 	"testing"
 	"os"
-	"path/filepath"
+	"io/ioutil"
+	"reflect"
+	"path"
 )
 
-const testDataDir = "testdata"
+var tempdir string
 
-var basedir = testDataDir
-
-func findPaths(finder Finder) []string {
-	var paths []string
-	for path := range finder.Find(basedir) {
-		paths = append(paths, path)
-	}
-	return paths
+type fileData struct {
+	relpath string
+	size    int
 }
 
-func Test_should_find_all_files_and_only_files(t *testing.T) {
-	finder := NewFinder()
-	paths := findPaths(finder)
-
-	expected := 9
-	if len(paths) != expected {
-		t.Fatalf("got %d files, expected %d", len(paths), expected)
+func Test_Find_MinSize(t *testing.T) {
+	fdata := []fileData{
+		{"f1.txt", 1},
+		{"f2.txt", 2},
+		{"f3.txt", 3},
 	}
 
-	assertPathsAreFiles(t, paths...)
-}
+	createTempFiles(fdata)
+	defer deleteTempFiles()
 
-func Test_should_find_size30_for_MinSize30(t *testing.T) {
-	finder := NewFinder(Filters.MinSize(30))
-	paths := findPaths(finder)
-
-	if len(paths) != 3 {
-		t.Fatalf("got %d files, expected 3", len(paths))
+	data := []struct {
+		minSize  int64
+		expected []string
+	}{
+		{minSize: 1, expected: []string{"f1.txt", "f2.txt", "f3.txt"}},
+		{minSize: 2, expected: []string{"f2.txt", "f3.txt"}},
+		{minSize: 3, expected: []string{"f3.txt"}},
+		{minSize: 4, expected: nil},
 	}
 
-	assertPathsAreFiles(t, paths...)
-}
-
-func assertPathsAreFiles(t *testing.T, paths ... string) {
-	for _, path := range paths {
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Error(err)
-		} else if info.IsDir() {
-			t.Errorf("got %s which is a directory, expected only files", info)
+	for _, item := range data {
+		finder := NewFinder(Filters.MinSize(item.minSize))
+		actual := normalize(findPaths(finder))
+		if !reflect.DeepEqual(item.expected, actual) {
+			t.Errorf("got %#v; expected %#v", actual, item.expected)
 		}
 	}
 }
 
-func Test_assertPathsAreFiles_should_pass_for_files(t *testing.T) {
-	t2 := &testing.T{}
-	assertPathsAreFiles(t2, filepath.Join(basedir, "size30.txt"))
-	if t2.Failed() {
-		t.Fatal("assertPathsAreFiles failed for a file, but it shouldn't have")
+func Test_Find_IncludeRegex(t *testing.T) {
+	fdata := []fileData{
+		{relpath: "a/f1.txt"},
+		{relpath: "b/f1.pdf"},
+		{relpath: "c/f2.pdf"},
+	}
+
+	createTempFiles(fdata)
+	defer deleteTempFiles()
+
+	data := []struct {
+		pattern  string
+		expected []string
+	}{
+		{pattern: `\.txt$`, expected: []string{"a/f1.txt"}},
+		{pattern: `\.pdf$`, expected: []string{"b/f1.pdf", "c/f2.pdf"}},
+		{pattern: `f2.pdf`, expected: []string{"c/f2.pdf"}},
+		{pattern: `f1.txt`, expected: []string{"a/f1.txt"}},
+		{pattern: `^f1`, expected: []string{"a/f1.txt", "b/f1.pdf"}},
+	}
+
+	for _, item := range data {
+		finder := NewFinder(Filters.IncludeRegex(item.pattern))
+		actual := normalize(findPaths(finder))
+		if !reflect.DeepEqual(item.expected, actual) {
+			t.Errorf("got %#v; expected %#v", actual, item.expected)
+		}
 	}
 }
 
-func Test_assertPathsAreFiles_should_fail_for_dirs(t *testing.T) {
-	t2 := &testing.T{}
-	assertPathsAreFiles(t2, ".")
-	if !t2.Failed() {
-		t.Fatal("assertPathsAreFiles did not fail for a directory, but it should have")
+func Test_Find_ExcludeRegex(t *testing.T) {
+	fdata := []fileData{
+		{relpath: "a/f1.txt"},
+		{relpath: "b/f1.pdf"},
+		{relpath: "c/f2.pdf"},
+	}
+
+	createTempFiles(fdata)
+	defer deleteTempFiles()
+
+	data := []struct {
+		pattern  string
+		expected []string
+	}{
+		{pattern: `\.txt$`, expected: []string{"b/f1.pdf", "c/f2.pdf"}},
+		{pattern: `\.pdf$`, expected: []string{"a/f1.txt"}},
+		{pattern: `f2.pdf`, expected: []string{"a/f1.txt", "b/f1.pdf"}},
+		{pattern: `f1.txt`, expected: []string{"b/f1.pdf", "c/f2.pdf"}},
+		{pattern: `^f1`, expected: []string{"c/f2.pdf"}},
+	}
+
+	for _, item := range data {
+		finder := NewFinder(Filters.ExcludeRegex(item.pattern))
+		actual := normalize(findPaths(finder))
+		if !reflect.DeepEqual(item.expected, actual) {
+			t.Errorf("got %#v; expected %#v", actual, item.expected)
+		}
 	}
 }
 
-func Test_assertPathsAreFiles_should_fail_for_non_existent_paths(t *testing.T) {
-	t2 := &testing.T{}
-	assertPathsAreFiles(t2, "nonexistent")
-	if !t2.Failed() {
-		t.Fatal("assertPathsAreFiles did not fail for a nonexistent file, but it should have")
+func normalize(paths []string) []string {
+	var stripped []string
+	for _, p := range paths {
+		stripped = append(stripped, p[len(tempdir)+1:])
 	}
+	return stripped
+}
+
+func createTempFiles(data []fileData) {
+	var err error
+	tempdir, err = ioutil.TempDir("", "test")
+	check(err)
+
+	for _, v := range data {
+		p := path.Join(tempdir, v.relpath)
+		basedir := path.Dir(p)
+		os.MkdirAll(basedir, 0755)
+		err := ioutil.WriteFile(p, make([]byte, v.size), 0644)
+		check(err)
+	}
+}
+
+func deleteTempFiles() {
+	err := os.RemoveAll(tempdir)
+	check(err)
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func findPaths(finder Finder) []string {
+	var paths []string
+	for p := range finder.Find(tempdir) {
+		paths = append(paths, p)
+	}
+	return paths
 }

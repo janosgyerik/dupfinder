@@ -24,7 +24,8 @@ type regexFilter struct {
 }
 
 func (filter regexFilter) Accept(path string, info os.FileInfo) bool {
-	return filter.negative != filter.regex.MatchString(path)
+	_, filename := filepath.Split(path)
+	return filter.negative != filter.regex.MatchString(filename)
 }
 
 func newRegexFilter(regex string, negative bool) regexFilter {
