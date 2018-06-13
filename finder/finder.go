@@ -35,10 +35,13 @@ func (filter regexFilter) Accept(path string, info os.FileInfo) bool {
 	return filter.negative != filter.regex.MatchString(path)
 }
 
+type filterByInt64 func(n int64) Filter
+type filterByString func(s string) Filter
+
 var Filters = struct {
-	MinSize      func(size int64) Filter
-	IncludeRegex func(pattern string) Filter
-	ExcludeRegex func(pattern string) Filter
+	MinSize      filterByInt64
+	IncludeRegex filterByString
+	ExcludeRegex filterByString
 }{
 	MinSize:      func(size int64) Filter { return minSizeFilter{size} },
 	IncludeRegex: func(regex string) Filter { return newRegexFilter(regex, false) },
