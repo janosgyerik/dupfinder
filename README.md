@@ -6,6 +6,13 @@ Find duplicate files in specified directory trees.
 [![GoDoc](https://godoc.org/github.com/janosgyerik/dupfinder?status.svg)](https://godoc.org/github.com/janosgyerik/dupfinder)
 [![Build Status](https://travis-ci.org/janosgyerik/dupfinder.svg?branch=master)](https://travis-ci.org/janosgyerik/dupfinder)
 
+Download
+--------
+
+Binaries for several platforms are available in GitHub releases:
+
+https://github.com/janosgyerik/dupfinder/releases
+
 Usage
 -----
 
@@ -25,13 +32,6 @@ only considering filenames with extension `.avi`,
 descending to at most 2 sub-directory levels:
 
     find path/to/dir path/to/other/dir -name '*.avi' -maxdepth 2 | dupfinder -0 
-
-Download
---------
-
-Binaries for several platforms are available in GitHub releases:
-
-https://github.com/janosgyerik/dupfinder/releases
 
 Generate test coverage report
 -----------------------------
