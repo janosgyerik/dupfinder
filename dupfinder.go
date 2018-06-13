@@ -6,6 +6,7 @@ import (
 	"sort"
 	"io"
 	"reflect"
+	"github.com/janosgyerik/dupfinder/utils"
 )
 
 const chunkSize = 4096
@@ -33,7 +34,7 @@ type fileItem struct {
 }
 
 func newFileItem(path string) *fileItem {
-	return &fileItem{path, FileSize(path)}
+	return &fileItem{path, utils.FileSize(path)}
 }
 
 func check(e error) {
@@ -131,8 +132,8 @@ type bySizeAndFirstPath [][]string
 func (a bySizeAndFirstPath) Len() int      { return len(a) }
 func (a bySizeAndFirstPath) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a bySizeAndFirstPath) Less(i, j int) bool {
-	s1 := FileSize(a[i][0])
-	s2 := FileSize(a[j][0])
+	s1 := utils.FileSize(a[i][0])
+	s2 := utils.FileSize(a[j][0])
 	if s1 < s2 {
 		return true
 	}

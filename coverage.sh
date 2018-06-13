@@ -19,6 +19,7 @@ cover() {
 cover . . dupfinder
 cover . ./finder finder
 cover . ./pathreader pathreader
+cover . ./utils utils
 cover cmd/dupfinder '' cmd
 
 {

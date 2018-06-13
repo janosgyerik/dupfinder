@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/janosgyerik/dupfinder"
 	"strconv"
+	"github.com/janosgyerik/dupfinder/utils"
+	"path/filepath"
 )
 
 var verbose bool
@@ -156,11 +158,11 @@ func main() {
 
 	printLine("Collecting paths to check ...")
 
-	filter := dupfinder.NewDefaultFilter()
+	filter := utils.NewDefaultFilter()
 	var paths []string
 	i := 1
 	for path := range params.paths {
-		normalized := dupfinder.NormalizePath(path)
+		normalized := filepath.Clean(path)
 		if !filter(normalized) {
 			continue
 		}
@@ -183,7 +185,7 @@ func main() {
 	printLine()
 
 	for _, group := range tracker.Dups() {
-		fmt.Println("# file sizes:", dupfinder.FileSize(group[0]))
+		fmt.Println("# file sizes:", utils.FileSize(group[0]))
 		for _, path := range group {
 			fmt.Println(path)
 		}

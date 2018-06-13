@@ -1,9 +1,8 @@
-package dupfinder
+package utils
 
 import (
 	"os"
-	"path/filepath"
-)
+	)
 
 func FileSize(path string) int64 {
 	fileInfo, e := os.Stat(path)
@@ -11,10 +10,6 @@ func FileSize(path string) int64 {
 		panic(e)
 	}
 	return fileInfo.Size()
-}
-
-func NormalizePath(path string) string {
-	return filepath.Clean(path)
 }
 
 type PathFilter func(string) bool
