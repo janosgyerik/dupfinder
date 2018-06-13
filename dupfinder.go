@@ -6,10 +6,20 @@ import (
 	"sort"
 	"io"
 	"reflect"
-	"path/filepath"
 )
 
 const chunkSize = 4096
+
+type EventListener interface {
+	NewDuplicate([]string)
+	BytesRead(count int)
+}
+
+type nullEventListener struct{}
+
+func (eventListener *nullEventListener) NewDuplicate([]string) {}
+
+func (eventListener *nullEventListener) BytesRead(int) {}
 
 type Tracker interface {
 	Add(path string)
@@ -22,16 +32,14 @@ type fileItem struct {
 	size int64
 }
 
-func FileSize(path string) int64 {
-	fi, e := os.Stat(path)
+func newFileItem(path string) *fileItem {
+	return &fileItem{path, FileSize(path)}
+}
+
+func check(e error) {
 	if e != nil {
 		panic(e)
 	}
-	return fi.Size()
-}
-
-func newFileItem(path string) *fileItem {
-	return &fileItem{path, FileSize(path)}
 }
 
 type group struct {
@@ -43,12 +51,6 @@ type group struct {
 func (g *group) add(item *fileItem) {
 	g.items = append(g.items, item)
 	g.paths = append(g.paths, item.path)
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func (g *group) fits(item *fileItem) bool {
@@ -95,17 +97,6 @@ func newGroup(t *tracker, item *fileItem) *group {
 	g.add(item)
 	return g
 }
-
-type EventListener interface {
-	NewDuplicate([]string)
-	BytesRead(count int)
-}
-
-type nullEventListener struct{}
-
-func (eventListener *nullEventListener) NewDuplicate([]string) {}
-
-func (eventListener *nullEventListener) BytesRead(int) {}
 
 type tracker struct {
 	groups        []*group
@@ -176,38 +167,4 @@ func NewTracker() Tracker {
 	t.indexBySize = make(map[int64][]*group)
 	t.eventListener = &nullEventListener{}
 	return t
-}
-
-type PathFilter func(string) bool
-
-func NormalizePath(path string) string {
-	return filepath.Clean(path)
-}
-
-func newUniqueFilter() PathFilter {
-	seen := make(map[string]bool)
-
-	return func(s string) bool {
-		if _, ok := seen[s]; !ok {
-			seen[s] = true
-			return true
-		}
-		return false
-	}
-}
-
-func isFile(s string) bool {
-	stat, err := os.Lstat(s)
-	if err != nil {
-		return false
-	}
-	return stat.Mode().IsRegular()
-}
-
-func NewDefaultFilter() PathFilter {
-	isUnique := newUniqueFilter()
-
-	return func(s string) bool {
-		return isFile(s) && isUnique(s)
-	}
 }
