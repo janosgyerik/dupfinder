@@ -6,10 +6,6 @@ import (
 	"regexp"
 )
 
-type Finder interface {
-	Find(basedir string) <-chan string
-}
-
 type Filter interface {
 	Accept(path string, info os.FileInfo) bool
 }
@@ -27,12 +23,12 @@ type regexFilter struct {
 	negative bool
 }
 
-func newRegexFilter(regex string, negative bool) regexFilter {
-	return regexFilter{regexp.MustCompile(regex), negative}
-}
-
 func (filter regexFilter) Accept(path string, info os.FileInfo) bool {
 	return filter.negative != filter.regex.MatchString(path)
+}
+
+func newRegexFilter(regex string, negative bool) regexFilter {
+	return regexFilter{regexp.MustCompile(regex), negative}
 }
 
 type filterByInt64 func(n int64) Filter
@@ -46,6 +42,10 @@ var Filters = struct {
 	MinSize:      func(size int64) Filter { return minSizeFilter{size} },
 	IncludeRegex: func(regex string) Filter { return newRegexFilter(regex, false) },
 	ExcludeRegex: func(regex string) Filter { return newRegexFilter(regex, true) },
+}
+
+type Finder interface {
+	Find(basedir string) <-chan string
 }
 
 type defaultFinder struct {
