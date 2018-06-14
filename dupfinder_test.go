@@ -48,6 +48,10 @@ func Test_find_one_group(t *testing.T) {
 
 func Test_find_multiple_varied_sized_groups(t *testing.T) {
 	fdata := []fileData{
+		{"z1.txt", "zo"},
+		{"z2.txt", "zo"},
+		{"size5-1.txt", "apple"},
+		{"size5-2.txt", "apple"},
 		{"f1.txt", "foo"},
 		{"a/f2.txt", "foo"},
 		{"a/b/f3.txt", "foo"},
@@ -57,6 +61,10 @@ func Test_find_multiple_varied_sized_groups(t *testing.T) {
 	}
 	expected := [][]string{
 		{
+			"z1.txt",
+			"z2.txt",
+		},
+		{
 			"a/b/f3.txt",
 			"a/f2.txt",
 			"f1.txt",
@@ -64,6 +72,10 @@ func Test_find_multiple_varied_sized_groups(t *testing.T) {
 		{
 			"b/c/f2.txt",
 			"b/f1.txt",
+		},
+		{
+			"size5-1.txt",
+			"size5-2.txt",
 		},
 	}
 
@@ -108,9 +120,9 @@ func deleteTempFiles() {
 
 func run(fdata []fileData) [][]string {
 	t := NewTracker()
+	t.SetEventListener(&nullEventListener{})
 	for _, v := range fdata {
 		t.Add(path.Join(tempdir, v.relpath))
 	}
-
 	return t.Dups()
 }

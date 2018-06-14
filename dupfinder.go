@@ -1,7 +1,6 @@
 package dupfinder
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"io"
@@ -69,10 +68,6 @@ func (g *group) fits(item *fileItem) bool {
 
 		g.tracker.eventListener.BytesRead(n1 + n2)
 
-		if n1 != n2 {
-			return false
-		}
-
 		if n1 == 0 {
 			return err1 == io.EOF && err2 == io.EOF
 		}
@@ -81,10 +76,6 @@ func (g *group) fits(item *fileItem) bool {
 			return false
 		}
 	}
-}
-
-func (g *group) String() string {
-	return fmt.Sprintf("%v", g.items)
 }
 
 func newGroup(t *tracker, item *fileItem) *group {
