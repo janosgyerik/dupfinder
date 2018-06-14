@@ -3,8 +3,9 @@ package utils
 import (
 	"io/ioutil"
 	"os"
-	"testing"
 	"path/filepath"
+	"testing"
+	"io"
 )
 
 func TestFileSize(t *testing.T) {
@@ -30,23 +31,17 @@ func TestFileSize(t *testing.T) {
 
 func newTempFile(size int64) string {
 	tempfile, err := ioutil.TempFile("", "test")
-	check(err)
+	PanicIfFailed(err)
 
 	err = ioutil.WriteFile(tempfile.Name(), make([]byte, size), 0644)
-	check(err)
+	PanicIfFailed(err)
 
 	return tempfile.Name()
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func TestIsFile(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "test")
-	check(err)
+	PanicIfFailed(err)
 
 	defer os.RemoveAll(tempdir)
 
@@ -69,7 +64,7 @@ func TestIsFile(t *testing.T) {
 	}{
 		{"file", file, true},
 		{"symlink to file", linkToFile, false},
-		{"dir", dir,false},
+		{"dir", dir, false},
 		{"symlink to dir", linkToDir, false},
 		{"nonexistent", "nonexistent", false},
 	}
@@ -78,6 +73,34 @@ func TestIsFile(t *testing.T) {
 			if got := IsFile(tt.path); got != tt.want {
 				t.Errorf("IsFile() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestPanicIfFailed(t *testing.T) {
+	tests := []struct {
+		name      string
+		err       error
+		recovered bool
+	}{
+		{"success", nil, false},
+		{"failure", io.EOF, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if tt.recovered {
+					if r == nil {
+						t.Errorf("PanicIfFailed() did not panic but should have")
+					}
+				} else {
+					if r != nil {
+						t.Errorf("PanicIfFailed() paniced but should not have")
+					}
+				}
+			}()
+			PanicIfFailed(tt.err)
 		})
 	}
 }

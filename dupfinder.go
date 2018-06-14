@@ -37,12 +37,6 @@ func newFileItem(path string) *fileItem {
 	return &fileItem{path, utils.FileSize(path)}
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 type group struct {
 	items   []*fileItem
 	paths   []string
@@ -59,11 +53,11 @@ func (g *group) fits(item *fileItem) bool {
 	p2 := item.path
 
 	f1, err := os.Open(p1)
-	check(err)
+	utils.PanicIfFailed(err)
 	defer f1.Close()
 
 	f2, err := os.Open(p2)
-	check(err)
+	utils.PanicIfFailed(err)
 	defer f2.Close()
 
 	buf1 := make([]byte, chunkSize)

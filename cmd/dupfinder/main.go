@@ -97,14 +97,8 @@ func toByteCount(s string) int64 {
 	}
 
 	v, err := strconv.Atoi(numPart)
-	check(err)
+	utils.PanicIfFailed(err)
 	return int64(v) * multiplier
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func findInAll(f finder.Finder, args []string) <-chan string {

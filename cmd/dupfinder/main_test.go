@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"os/exec"
 	"strings"
+	"github.com/janosgyerik/dupfinder/utils"
 )
 
 var tempdir string
@@ -96,25 +97,25 @@ func normalize(out string) [][]string {
 func createTempFiles(data []fileData) {
 	var err error
 	tempdir, err = ioutil.TempDir("", "test")
-	check(err)
+	utils.PanicIfFailed(err)
 
 	for _, v := range data {
 		p := path.Join(tempdir, v.relpath)
 		basedir := path.Dir(p)
 		os.MkdirAll(basedir, 0755)
 		err := ioutil.WriteFile(p, []byte(v.content), 0644)
-		check(err)
+		utils.PanicIfFailed(err)
 	}
 }
 
 func deleteTempFiles() {
 	err := os.RemoveAll(tempdir)
-	check(err)
+	utils.PanicIfFailed(err)
 }
 
 func run() string {
 	out, err := exec.Command("go", "run", "main.go", "-minSize", "1", tempdir).Output()
-	check(err)
+	utils.PanicIfFailed(err)
 	return string(out)
 }
 

@@ -6,9 +6,7 @@ import (
 
 func FileSize(path string) int64 {
 	fileInfo, e := os.Stat(path)
-	if e != nil {
-		panic(e)
-	}
+	PanicIfFailed(e)
 	return fileInfo.Size()
 }
 
@@ -18,6 +16,12 @@ func IsFile(s string) bool {
 		return false
 	}
 	return stat.Mode().IsRegular()
+}
+
+func PanicIfFailed(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 type PathFilter func(string) bool

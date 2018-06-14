@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"path"
+	"github.com/janosgyerik/dupfinder/utils"
 )
 
 var tempdir string
@@ -115,26 +116,20 @@ func normalize(paths []string) []string {
 func createTempFiles(data []fileData) {
 	var err error
 	tempdir, err = ioutil.TempDir("", "test")
-	check(err)
+	utils.PanicIfFailed(err)
 
 	for _, v := range data {
 		p := path.Join(tempdir, v.relpath)
 		basedir := path.Dir(p)
 		os.MkdirAll(basedir, 0755)
 		err := ioutil.WriteFile(p, make([]byte, v.size), 0644)
-		check(err)
+		utils.PanicIfFailed(err)
 	}
 }
 
 func deleteTempFiles() {
 	err := os.RemoveAll(tempdir)
-	check(err)
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
+	utils.PanicIfFailed(err)
 }
 
 func findPaths(finder Finder) []string {
