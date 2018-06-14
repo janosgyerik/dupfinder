@@ -152,7 +152,7 @@ func main() {
 
 	printLine("Collecting paths to check ...")
 
-	filter := utils.NewDefaultFilter()
+	uniq := utils.NewUniqueFilter()
 	var paths []string
 	i := 1
 	for path := range params.paths {
@@ -162,9 +162,10 @@ func main() {
 
 		normalized := filepath.Clean(path)
 
-		if !filter(normalized) {
+		if !uniq.Add(normalized) {
 			continue
 		}
+
 		paths = append(paths, normalized)
 		status("Found: %d", i)
 		i += 1

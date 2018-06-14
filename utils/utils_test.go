@@ -1,11 +1,11 @@
 package utils
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-	"io"
 )
 
 func TestFileSize(t *testing.T) {
@@ -101,6 +101,36 @@ func TestPanicIfFailed(t *testing.T) {
 				}
 			}()
 			PanicIfFailed(tt.err)
+		})
+	}
+}
+
+func Test_UniqueFilter(t *testing.T) {
+	type AddWant struct {
+		add  string
+		want bool
+	}
+	tests := []struct {
+		name string
+		seq  []AddWant
+	}{
+		{"all different", []AddWant{
+			{"foo", true},
+			{"bar", true},
+			{"baz", true}}},
+		{"all same", []AddWant{
+			{"foo", true},
+			{"foo", false},
+			{"foo", false}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			uf := NewUniqueFilter()
+			for _, item := range tt.seq {
+				if got := uf.Add(item.add); got != item.want {
+					t.Errorf("UniqueFilter.Add(%v) = %v, want %v", item.add, got, item.want)
+				}
+			}
 		})
 	}
 }

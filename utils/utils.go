@@ -24,24 +24,24 @@ func PanicIfFailed(e error) {
 	}
 }
 
-type PathFilter func(string) bool
-
-func newUniqueFilter() PathFilter {
-	seen := make(map[string]bool)
-
-	return func(s string) bool {
-		if _, ok := seen[s]; !ok {
-			seen[s] = true
-			return true
-		}
-		return false
-	}
+type UniqueFilter interface {
+	Add(string) bool
 }
 
-func NewDefaultFilter() PathFilter {
-	isUnique := newUniqueFilter()
+type uniqueFilter struct {
+	seen map[string]bool
+}
 
-	return func(s string) bool {
-		return isUnique(s)
+func (uf *uniqueFilter) Add(s string) bool {
+	if _, ok := uf.seen[s]; !ok {
+		uf.seen[s] = true
+		return true
 	}
+	return false
+}
+
+func NewUniqueFilter() UniqueFilter {
+	uf := &uniqueFilter{}
+	uf.seen = make(map[string]bool)
+	return uf
 }
