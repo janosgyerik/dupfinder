@@ -6,7 +6,6 @@
 
 ### polishing
 
-- get the pools more directly in `dupTracker.getDupGroups`, without the ugly delete
 - Eliminate code duplication in test of library and test of main
 - maximum reasonable test coverage
 - document public types and functions

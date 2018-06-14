@@ -71,6 +71,7 @@ func TestIsFile(t *testing.T) {
 		{"symlink to file", linkToFile, false},
 		{"dir", dir,false},
 		{"symlink to dir", linkToDir, false},
+		{"nonexistent", "nonexistent", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
